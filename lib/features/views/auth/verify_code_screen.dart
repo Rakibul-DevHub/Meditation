@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
+import 'package:outdoor_therapy/features/views/auth/create_new_password_screen.dart';
+import 'package:outdoor_therapy/features/views/auth/forgot_password.dart';
+import '../../../core/app_colors.dart';
 
 class VerifyCodeScreen extends StatefulWidget {
   final String? email; // Optional: to show which email the code was sent to
@@ -48,14 +51,14 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
 
     if (otpCode.length < 6) {
       Get.snackbar(
-        'Incomplete Code',
+        'Invalid Code',
         'Please enter the complete 6-digit verification code',
         backgroundColor: const Color(0xff101828),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(20),
         borderRadius: 12,
-        icon: const Icon(Icons.error_outline, color: Color(0xff615fff)),
+        icon: const Icon(Icons.error_outline, color: AppColors.primaryColor),
       );
       return;
     }
@@ -64,15 +67,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       _isLoading = true;
     });
 
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isLoading = false;
-      });
 
-      // Show success dialog
-      _showVerificationSuccess();
-    });
   }
 
   void _resendCode() {
@@ -81,108 +76,9 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     setState(() {
       _isLoading = true;
     });
-
-    // Simulate resend API call
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isLoading = false;
-      });
-
-      _startResendTimer();
-
-      Get.snackbar(
-        'Code Resent',
-        'A new verification code has been sent to your ${widget.email ?? 'email'}',
-        backgroundColor: const Color(0xff101828),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(20),
-        borderRadius: 12,
-        icon: const Icon(Icons.check_circle_outline, color: Color(0xff615fff)),
-      );
-    });
   }
 
-  void _showVerificationSuccess() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: const Color(0xff101828),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  height: 60,
-                  width: 60,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff1A1F2E),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
-                    color: Color(0xff615fff),
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Verification Successful",
-                  style: TextStyle(
-                    color: Color(0xfff9fafb),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Your email has been verified successfully. You can now reset your password.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xff9AA4B2),
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff615fff),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Navigate to reset password screen
-                      // Get.to(() => const ResetPasswordScreen());
-                    },
-                    child: const Text(
-                      "Continue to Reset Password",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   @override
   void dispose() {
@@ -220,7 +116,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
         child: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -236,18 +132,9 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                     borderRadius: BorderRadius.circular(50),
                     child: SvgPicture.asset(
                       'assets/images/logo.svg',
-                      width: 50,
-                      height: 50,
+                      width: 80,
+                      height: 80,
                       fit: BoxFit.scaleDown,
-                      placeholderBuilder: (BuildContext context) => Container(
-                        padding: const EdgeInsets.all(16.0),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xff615fff),
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ),
@@ -281,19 +168,20 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
 
                 const SizedBox(height: 40),
 
-                /// OTP Input Fields
+                /// OTP Input Fields - FIXED VERSION (maintaining original dimensions)
+                /// OTP Input Fields - FIXED CENTER VERSION
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: List.generate(6, (index) {
                     return Container(
-                      width: 50,
-                      height: 56,
+                      width: 55,
+                      height: 38,
                       decoration: BoxDecoration(
                         color: const Color(0xff101828),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _otpControllers[index].text.isNotEmpty
-                              ? const Color(0xff615fff)
+                              ? AppColors.primaryColor
                               : const Color(0xff364153),
                           width: _otpControllers[index].text.isNotEmpty ? 2 : 1,
                         ),
@@ -303,18 +191,25 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                         focusNode: _focusNodes[index],
                         style: const TextStyle(
                           color: Color(0xfff9fafb),
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          height: 1,
                         ),
                         textAlign: TextAlign.center,
+                        textAlignVertical: TextAlignVertical.center,
                         keyboardType: TextInputType.number,
                         maxLength: 1,
                         decoration: const InputDecoration(
                           counterText: '',
                           border: InputBorder.none,
+                          isCollapsed: true,
+                          contentPadding: EdgeInsets.only(
+                            top: 7,
+                            bottom: 6,
+                          ),
                         ),
                         onChanged: (value) {
-                          setState(() {}); // Update border color
+                          setState(() {});
 
                           if (value.isNotEmpty && index < 5) {
                             _focusNodes[index + 1].requestFocus();
@@ -335,13 +230,17 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                   height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff615fff),
+                      backgroundColor: AppColors.primaryColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 0,
                     ),
-                    onPressed: _isLoading ? null : _verifyCode,
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                      Get.to(() => CreateNewPasswordScreen());
+                    },
                     child: _isLoading
                         ? const SizedBox(
                       height: 24,
@@ -368,7 +267,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                 Column(
                   children: [
                     const Text(
-                      "Didn't receive the code?",
+                      "Didn’t receive the code? You can resend it in 60 seconds",
                       style: TextStyle(
                         color: Color(0xff6a7282),
                         fontSize: 14,
@@ -389,7 +288,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                         child: const Text(
                           "Resend",
                           style: TextStyle(
-                            color: Color(0xff615fff),
+                            color: Color(0xffffffff),
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),

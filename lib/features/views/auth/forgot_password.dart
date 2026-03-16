@@ -3,6 +3,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:outdoor_therapy/features/views/auth/verify_code_screen.dart';
 
+import '../../../core/app_colors.dart';
+
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -46,7 +48,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   child: const Icon(
                     Icons.mark_email_read_rounded,
-                    color: Color(0xff615fff),
+                    color: AppColors.primaryColor,
                     size: 30,
                   ),
                 ),
@@ -75,7 +77,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff615fff),
+                      backgroundColor: AppColors.primaryColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -152,7 +154,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           padding: const EdgeInsets.all(16.0),
                           child: const Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xff615fff),
+                              color: AppColors.primaryColor,
                               strokeWidth: 2,
                             ),
                           ),
@@ -233,7 +235,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xff615fff), width: 2),
+                        borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -255,7 +257,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     height: 56,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff615fff),
+                        backgroundColor: AppColors.primaryColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:outdoor_therapy/features/views/auth/forgot_password.dart';
 
 
 class SignUpScreen extends StatelessWidget {
@@ -115,7 +118,10 @@ class SignUpScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        Get.offAll(()=>ForgotPasswordScreen());
+
+                      },
                       child: const Text(
                         "Sign Up",
                         style: TextStyle(
