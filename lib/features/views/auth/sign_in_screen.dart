@@ -5,6 +5,9 @@ import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:outdoor_therapy/features/views/auth/forgot_password.dart';
 import 'package:outdoor_therapy/features/views/auth/sign_up_screen.dart';
 
+import '../../../core/app_colors.dart';
+import '../home/home_screen.dart';
+
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
 
@@ -66,7 +69,7 @@ class SignInScreen extends StatelessWidget {
                   "Sign in to continue",
                   style: TextStyle(
                     fontSize: 16,
-                    color: Color(0xff6a7282),
+                    color: AppColors.lightGreyColor,
                   ),
                 ),
 
@@ -78,7 +81,7 @@ class SignInScreen extends StatelessWidget {
                   child: Text(
                     "Email",
                     style: TextStyle(
-                      color: Color(0xfffafafa),
+                      color: AppColors.whiteColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -88,11 +91,11 @@ class SignInScreen extends StatelessWidget {
                 const SizedBox(height: 10),
 
                 TextField(
-                  style: const TextStyle(color: Color(0xfff9fafb)),
+                  style: const TextStyle(color: AppColors.whiteColor),
                   decoration: InputDecoration(
                     hintText: "your@email.com",
-                    hintStyle: const TextStyle(color: Color(0xff6a7282)),
-                    prefixIcon: const Icon(Icons.email_outlined, color: Color(0xff6a7282)),
+                    hintStyle: const TextStyle(color: AppColors.lightGreyColor),
+                    prefixIcon: const Icon(Icons.email_outlined, color: AppColors.lightGreyColor),
                     filled: true,
                     fillColor: const Color(0xff101828),
                     border: OutlineInputBorder(
@@ -105,7 +108,7 @@ class SignInScreen extends StatelessWidget {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xff615fff), width: 2),
+                      borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
                     ),
                   ),
                 ),
@@ -118,7 +121,7 @@ class SignInScreen extends StatelessWidget {
                   child: Text(
                     "Password",
                     style: TextStyle(
-                      color: Color(0xfffafafa),
+                      color: AppColors.whiteColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -129,10 +132,10 @@ class SignInScreen extends StatelessWidget {
 
                 TextField(
                   obscureText: true,
-                  style: const TextStyle(color: Color(0xfff9fafb)),
+                  style: const TextStyle(color: AppColors.whiteColor),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xff6a7282)),
-                    suffixIcon: const Icon(Icons.visibility_off, color: Color(0xff6a7282)),
+                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.lightGreyColor),
+                    suffixIcon: const Icon(Icons.visibility_off, color: AppColors.lightGreyColor),
                     filled: true,
                     fillColor: const Color(0xff101828),
                     border: OutlineInputBorder(
@@ -182,7 +185,9 @@ class SignInScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Get.to(()=>HomeScreen());
+                    },
                     child: const Text(
                       "Sign In",
                       style: TextStyle(
@@ -206,7 +211,7 @@ class SignInScreen extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 10),
                       child: Text(
                         "OR",
-                        style: TextStyle(color: Color(0xff6a7282)),
+                        style: TextStyle(color: AppColors.lightGreyColor),
                       ),
                     ),
                     Expanded(
@@ -239,7 +244,7 @@ class SignInScreen extends StatelessWidget {
                   children: [
                     const Text(
                       "Don't have an account?",
-                      style: TextStyle(color: Color(0xff6a7282)),
+                      style: TextStyle(color: AppColors.lightGreyColor),
                     ),
                     const SizedBox(width: 4),
                     GestureDetector(
