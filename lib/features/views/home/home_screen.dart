@@ -1,3 +1,4 @@
+/**
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -317,4 +318,760 @@ class SleepCard extends StatelessWidget {
       ),
     );
   }
+}*/
+
+
+
+
+/*
+
+// home_screen.dart
+import 'package:flutter/material.dart';
+// import 'package:outdoor_therapy/features/widgets/custom_play_card.dart';
+
+import '../../../core/widget/custom_play_card.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  static String _getGreeting() {
+    var hour = DateTime.now().hour;
+    if (hour < 12) {
+      return "Good Morning";
+    } else if (hour < 17) {
+      return "Good Afternoon";
+    } else {
+      return "Good Evening";
+    }
+  }
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
 }
+
+class _HomeScreenState extends State<HomeScreen> {
+  final String greeting = HomeScreen._getGreeting();
+
+  // Track state for the mini player
+  bool _isPlaying = true;
+  bool _showMiniPlayer = false;
+  Map<String, dynamic>? _currentTrack;
+
+  // Featured Sounds - Horizontal Scroll (8 items)
+  final List<Map<String, String>> featuredSounds = [
+    {"title": "Gentle Rain", "image": "assets/images/dummy_image.jpg", "duration": "60:00", "category": "Nature"},
+    {"title": "Ocean Waves", "image": "assets/images/dummy_image2.jpg", "duration": "45:00", "category": "Nature"},
+    {"title": "Forest Night", "image": "assets/images/dummy_image3.jpg", "duration": "60:00", "category": "Nature"},
+    {"title": "Mountain Stream", "image": "assets/images/dummy_image.jpg", "duration": "50:00", "category": "Nature"},
+    {"title": "Thunder Storm", "image": "assets/images/dummy_image2.jpg", "duration": "90:00", "category": "Nature"},
+    {"title": "Birds Chirping", "image": "assets/images/dummy_image3.jpg", "duration": "40:00", "category": "Nature"},
+    {"title": "White Noise", "image": "assets/images/dummy_image.jpg", "duration": "120:00", "category": "Ambient"},
+    {"title": "Campfire", "image": "assets/images/dummy_image2.jpg", "duration": "60:00", "category": "Nature"},
+  ];
+
+  // Sleep Tonight - Horizontal Scroll (8 items)
+  final List<Map<String, String>> sleepTonight = [
+    {"title": "Deep Sleep", "image": "assets/images/dummy_image.jpg", "duration": "8:00:00", "category": "Sleep"},
+    {"title": "Lucid Dreaming", "image": "assets/images/dummy_image2.jpg", "duration": "6:00:00", "category": "Sleep"},
+    {"title": "Sleep Meditation", "image": "assets/images/dummy_image3.jpg", "duration": "45:00", "category": "Meditation"},
+    {"title": "Night Rain", "image": "assets/images/dummy_image.jpg", "duration": "8:00:00", "category": "Sleep"},
+    {"title": "Calm Piano", "image": "assets/images/dummy_image2.jpg", "duration": "7:00:00", "category": "Music"},
+    {"title": "Tibetan Bowls", "image": "assets/images/dummy_image3.jpg", "duration": "5:00:00", "category": "Meditation"},
+    {"title": "Breathing Exercise", "image": "assets/images/dummy_image.jpg", "duration": "30:00", "category": "Wellness"},
+    {"title": "Body Scan", "image": "assets/images/dummy_image2.jpg", "duration": "40:00", "category": "Meditation"},
+  ];
+
+  // Popular Listening - Vertical Scroll (10 items)
+  final List<Map<String, String>> popularListening = [
+    {"title": "Morning Meditation", "image": "assets/images/dummy_image.jpg", "duration": "20:00", "category": "Meditation"},
+    {"title": "Focus Music", "image": "assets/images/dummy_image2.jpg", "duration": "120:00", "category": "Focus"},
+    {"title": "Anxiety Relief", "image": "assets/images/dummy_image3.jpg", "duration": "30:00", "category": "Therapy"},
+    {"title": "Yoga Flow", "image": "assets/images/dummy_image.jpg", "duration": "45:00", "category": "Yoga"},
+    {"title": "Study Beats", "image": "assets/images/dummy_image2.jpg", "duration": "180:00", "category": "Study"},
+    {"title": "Stress Relief", "image": "assets/images/dummy_image3.jpg", "duration": "25:00", "category": "Therapy"},
+    {"title": "Power Nap", "image": "assets/images/dummy_image.jpg", "duration": "20:00", "category": "Sleep"},
+    {"title": "Mindfulness", "image": "assets/images/dummy_image2.jpg", "duration": "15:00", "category": "Meditation"},
+    {"title": "Nature Sounds", "image": "assets/images/dummy_image3.jpg", "duration": "90:00", "category": "Nature"},
+    {"title": "Sleep Stories", "image": "assets/images/dummy_image.jpg", "duration": "45:00", "category": "Sleep"},
+  ];
+
+  void _playTrack(Map<String, String> track) {
+    setState(() {
+      _showMiniPlayer = true;
+      _isPlaying = true;
+      _currentTrack = {
+        'title': track['title'] ?? 'Unknown Track',
+        'subtitle': track['category'] ?? 'Meditation',
+        'image': track['image'] ?? 'assets/gif/playing.gif',
+        'duration': track['duration'] ?? '2:25',
+        'description': 'Now playing ${track['title']}',
+        'category': track['category'] ?? 'meditation',
+      };
+    });
+  }
+
+  void _togglePlayPause() {
+    setState(() {
+      _isPlaying = !_isPlaying;
+    });
+  }
+
+  void _closePlayer() {
+    setState(() {
+      _showMiniPlayer = false;
+      _currentTrack = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Main scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+
+                    /// Greeting
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          greeting,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xff101828),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xff364153)),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.watch_later_outlined, size: 16, color: Colors.white70),
+                              SizedBox(width: 6),
+                              Text("Sleep", style: TextStyle(color: Colors.white70)),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    const Text(
+                      "Time to unwind and relax",
+                      style: TextStyle(color: Color(0xff9AA4B2)),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// Featured Sounds - Horizontal Scroll
+                    const SectionHeader(title: "Featured Sounds"),
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      height: 180,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: featuredSounds.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 14),
+                        itemBuilder: (context, index) {
+                          final item = featuredSounds[index];
+                          return GestureDetector(
+                            onTap: () => _playTrack(item),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 120,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18),
+                                    image: DecorationImage(
+                                      image: AssetImage(item["image"]!),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  item["title"]!,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                Text(
+                                  item["duration"]!,
+                                  style: const TextStyle(
+                                    color: Color(0xff9AA4B2),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// Sleep Tonight - Horizontal Scroll
+                    const SectionHeader(title: "Sleep Tonight"),
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      height: 180,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: sleepTonight.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 14),
+                        itemBuilder: (context, index) {
+                          final item = sleepTonight[index];
+                          return GestureDetector(
+                            onTap: () => _playTrack(item),
+                            child: SleepCard(
+                              title: item["title"]!,
+                              duration: item["duration"]!,
+                              image: item["image"]!,
+                              width: 110,
+                              height: 110,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// Popular Listening - Vertical Scroll
+                    const SectionHeader(title: "Popular Listening"),
+                    const SizedBox(height: 16),
+
+                    // Vertical ListView with proper scrolling
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: popularListening.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final item = popularListening[index];
+                        return GestureDetector(
+                          onTap: () => _playTrack(item),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 55,
+                                height: 55,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  image: DecorationImage(
+                                    image: AssetImage(item["image"]!),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item["title"]!,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      "${item["category"]} • ${item["duration"]}",
+                                      style: const TextStyle(
+                                        color: Color(0xff9AA4B2),
+                                        fontSize: 12,
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.play_arrow, color: Colors.white70),
+                              const SizedBox(width: 12),
+                              const Icon(Icons.favorite_border, color: Colors.white70),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+
+            /// Mini Player (appears above bottom navigation)
+            if (_showMiniPlayer && _currentTrack != null)
+              CustomPlayCard(
+                track: _currentTrack!,
+                isPlaying: _isPlaying,
+                onPlayPause: _togglePlayPause,
+                onClose: _closePlayer,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SectionHeader extends StatelessWidget {
+  final String title;
+
+  const SectionHeader({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class SleepCard extends StatelessWidget {
+  final String title;
+  final String duration;
+  final String image;
+  final double width;
+  final double height;
+
+  const SleepCard({
+    super.key,
+    required this.title,
+    required this.duration,
+    required this.image,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: height,
+            width: width,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              image: DecorationImage(
+                image: AssetImage(image),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            duration,
+            style: const TextStyle(
+              color: Color(0xff9AA4B2),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// home_screen.dart
+import 'package:flutter/material.dart';
+// import 'package:outdoor_therapy/core/services/player_service.dart';
+
+import '../../../core/widget/player_service.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  static String _getGreeting() {
+    var hour = DateTime.now().hour;
+    if (hour < 12) {
+      return "Good Morning";
+    } else if (hour < 17) {
+      return "Good Afternoon";
+    } else {
+      return "Good Evening";
+    }
+  }
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final String greeting = HomeScreen._getGreeting();
+  final PlayerService _playerService = PlayerService();
+
+  // Featured Sounds - Horizontal Scroll (8 items)
+  final List<Map<String, String>> featuredSounds = [
+    {"title": "Gentle Rain", "image": "assets/images/dummy_image.jpg", "duration": "60:00", "category": "Nature"},
+    {"title": "Ocean Waves", "image": "assets/images/dummy_image2.jpg", "duration": "45:00", "category": "Nature"},
+    {"title": "Forest Night", "image": "assets/images/dummy_image3.jpg", "duration": "60:00", "category": "Nature"},
+    {"title": "Mountain Stream", "image": "assets/images/dummy_image.jpg", "duration": "50:00", "category": "Nature"},
+    {"title": "Thunder Storm", "image": "assets/images/dummy_image2.jpg", "duration": "90:00", "category": "Nature"},
+    {"title": "Birds Chirping", "image": "assets/images/dummy_image3.jpg", "duration": "40:00", "category": "Nature"},
+    {"title": "White Noise", "image": "assets/images/dummy_image.jpg", "duration": "120:00", "category": "Ambient"},
+    {"title": "Campfire", "image": "assets/images/dummy_image2.jpg", "duration": "60:00", "category": "Nature"},
+  ];
+
+  // Sleep Tonight - Horizontal Scroll (8 items)
+  final List<Map<String, String>> sleepTonight = [
+    {"title": "Deep Sleep", "image": "assets/images/dummy_image.jpg", "duration": "8:00:00", "category": "Sleep"},
+    {"title": "Lucid Dreaming", "image": "assets/images/dummy_image2.jpg", "duration": "6:00:00", "category": "Sleep"},
+    {"title": "Sleep Meditation", "image": "assets/images/dummy_image3.jpg", "duration": "45:00", "category": "Meditation"},
+    {"title": "Night Rain", "image": "assets/images/dummy_image.jpg", "duration": "8:00:00", "category": "Sleep"},
+    {"title": "Calm Piano", "image": "assets/images/dummy_image2.jpg", "duration": "7:00:00", "category": "Music"},
+    {"title": "Tibetan Bowls", "image": "assets/images/dummy_image3.jpg", "duration": "5:00:00", "category": "Meditation"},
+    {"title": "Breathing Exercise", "image": "assets/images/dummy_image.jpg", "duration": "30:00", "category": "Wellness"},
+    {"title": "Body Scan", "image": "assets/images/dummy_image2.jpg", "duration": "40:00", "category": "Meditation"},
+  ];
+
+  // Popular Listening - Vertical Scroll (10 items)
+  final List<Map<String, String>> popularListening = [
+    {"title": "Morning Meditation", "image": "assets/images/dummy_image.jpg", "duration": "20:00", "category": "Meditation"},
+    {"title": "Focus Music", "image": "assets/images/dummy_image2.jpg", "duration": "120:00", "category": "Focus"},
+    {"title": "Anxiety Relief", "image": "assets/images/dummy_image3.jpg", "duration": "30:00", "category": "Therapy"},
+    {"title": "Yoga Flow", "image": "assets/images/dummy_image.jpg", "duration": "45:00", "category": "Yoga"},
+    {"title": "Study Beats", "image": "assets/images/dummy_image2.jpg", "duration": "180:00", "category": "Study"},
+    {"title": "Stress Relief", "image": "assets/images/dummy_image3.jpg", "duration": "25:00", "category": "Therapy"},
+    {"title": "Power Nap", "image": "assets/images/dummy_image.jpg", "duration": "20:00", "category": "Sleep"},
+    {"title": "Mindfulness", "image": "assets/images/dummy_image2.jpg", "duration": "15:00", "category": "Meditation"},
+    {"title": "Nature Sounds", "image": "assets/images/dummy_image3.jpg", "duration": "90:00", "category": "Nature"},
+    {"title": "Sleep Stories", "image": "assets/images/dummy_image.jpg", "duration": "45:00", "category": "Sleep"},
+  ];
+
+  void _playTrack(Map<String, String> track) {
+    // Create a track map with the required format
+    final trackData = {
+      'title': track['title'] ?? 'Unknown Track',
+      'subtitle': track['category'] ?? 'Meditation',
+      'image': track['image'] ?? 'assets/gif/playing.gif',
+      'duration': track['duration'] ?? '2:25',
+      'description': 'Now playing ${track['title']}',
+      'category': track['category'] ?? 'meditation',
+    };
+
+    // Use the PlayerService to play the track
+    _playerService.playTrack(trackData);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+
+              /// Greeting
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    greeting,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff101828),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xff364153)),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.watch_later_outlined, size: 16, color: Colors.white70),
+                        SizedBox(width: 6),
+                        Text("Sleep", style: TextStyle(color: Colors.white70)),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+
+              const SizedBox(height: 6),
+
+              const Text(
+                "Time to unwind and relax",
+                style: TextStyle(color: Color(0xff9AA4B2)),
+              ),
+
+              const SizedBox(height: 30),
+
+              /// Featured Sounds - Horizontal Scroll
+              const SectionHeader(title: "Featured Sounds"),
+              const SizedBox(height: 16),
+
+              SizedBox(
+                height: 180,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: featuredSounds.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    final item = featuredSounds[index];
+                    return GestureDetector(
+                      onTap: () => _playTrack(item),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              image: DecorationImage(
+                                image: AssetImage(item["image"]!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            item["title"]!,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          Text(
+                            item["duration"]!,
+                            style: const TextStyle(
+                              color: Color(0xff9AA4B2),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              /// Sleep Tonight - Horizontal Scroll
+              const SectionHeader(title: "Sleep Tonight"),
+              const SizedBox(height: 16),
+
+              SizedBox(
+                height: 180,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: sleepTonight.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    final item = sleepTonight[index];
+                    return GestureDetector(
+                      onTap: () => _playTrack(item),
+                      child: SleepCard(
+                        title: item["title"]!,
+                        duration: item["duration"]!,
+                        image: item["image"]!,
+                        width: 110,
+                        height: 110,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              /// Popular Listening - Vertical Scroll
+              const SectionHeader(title: "Popular Listening"),
+              const SizedBox(height: 16),
+
+              // Vertical ListView with proper scrolling
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: popularListening.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final item = popularListening[index];
+                  return GestureDetector(
+                    onTap: () => _playTrack(item),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 55,
+                          height: 55,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: AssetImage(item["image"]!),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item["title"]!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                "${item["category"]} • ${item["duration"]}",
+                                style: const TextStyle(
+                                  color: Color(0xff9AA4B2),
+                                  fontSize: 12,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.play_arrow, color: Colors.white70),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.favorite_border, color: Colors.white70),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SectionHeader extends StatelessWidget {
+  final String title;
+
+  const SectionHeader({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class SleepCard extends StatelessWidget {
+  final String title;
+  final String duration;
+  final String image;
+  final double width;
+  final double height;
+
+  const SleepCard({
+    super.key,
+    required this.title,
+    required this.duration,
+    required this.image,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: height,
+            width: width,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              image: DecorationImage(
+                image: AssetImage(image),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+            ),
+          ),
+          Text(
+            duration,
+            style: const TextStyle(
+              color: Color(0xff9AA4B2),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
