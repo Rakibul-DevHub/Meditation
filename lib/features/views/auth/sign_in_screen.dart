@@ -4,6 +4,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:outdoor_therapy/features/views/auth/forgot_password.dart';
 import 'package:outdoor_therapy/features/views/auth/sign_up_screen.dart';
+import 'package:outdoor_therapy/features/views/bottom_nav/main_bottom_nav.dart';
 
 import '../../../core/app_colors.dart';
 import '../home/home_screen.dart';
@@ -186,7 +187,7 @@ class SignInScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      Get.to(()=>HomeScreen());
+                      Get.to(()=>MainBottomNav());
                     },
                     child: const Text(
                       "Sign In",
