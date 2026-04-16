@@ -1,0 +1,10 @@
+class AppUrl {
+  AppUrl._();
+
+  static const String baseUrl = 'https://mohaimin8001.sobhoy.com/api/v1';
+  static const String imageBaseUrl = 'https://mohaimin8001.sobhoy.com';
+  static const String registration = '$baseUrl/auth/register';
+  static const String resendEmailOtp = '$baseUrl/auth/register';///---> tis will chane
+  static const String verifyEmailOtp = '$baseUrl/auth/verify-email';
+
+}

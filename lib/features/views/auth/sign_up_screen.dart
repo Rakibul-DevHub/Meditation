@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:outdoor_therapy/features/views/auth/forgot_password.dart';
-
+import 'package:get/get.dart';
+import 'package:outdoor_therapy/features/views/auth/verify_code_screen.dart';
+import 'controller/sign_up_screen_controller.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Initialize controller
+    final SignUpScreenController controller = Get.put(SignUpScreenController());
+
     return Scaffold(
       backgroundColor: const Color(0xff030712),
       body: SafeArea(
@@ -19,7 +21,6 @@ class SignUpScreen extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-
                   const SizedBox(height: 20),
 
                   /// Icon Container
@@ -74,41 +75,128 @@ class SignUpScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
+                  /// Error message display
+                  Obx(() {
+                    if (controller.generalErrorMessage.value.isNotEmpty) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                controller.generalErrorMessage.value,
+                                style: const TextStyle(color: Colors.red, fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return const SizedBox.shrink();
+                    }
+                  }),
+
                   /// Name Row
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: buildInput("First Name"),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildInput(
+                              "First Name",
+                              controller: controller.firstNameController,
+                              errorText: controller.firstNameError,
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: buildInput("Last Name"),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildInput(
+                              "Last Name",
+                              controller: controller.lastNameController,
+                              errorText: controller.lastNameError,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 16),
 
-                  buildInput("Email", icon: Icons.email_outlined),
+                  buildInput(
+                    "Email",
+                    icon: Icons.email_outlined,
+                    controller: controller.emailController,
+                    errorText: controller.emailError,
+                  ),
 
                   const SizedBox(height: 16),
 
-                  buildInput("Phone", icon: Icons.phone),
+                  buildInput(
+                    "Phone",
+                    icon: Icons.phone,
+                    controller: controller.phoneController,
+                    errorText: controller.phoneError,
+                    isOptional: true,
+                  ),
 
                   const SizedBox(height: 16),
 
-                  buildInput("Password",
-                      icon: Icons.lock_outline, isPassword: true),
+                  Obx(() => buildInput(
+                    "Password",
+                    icon: Icons.lock_outline,
+                    isPassword: !controller.isPasswordVisible.value,
+                    controller: controller.passwordController,
+                    errorText: controller.passwordError,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.isPasswordVisible.value
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: const Color(0xff6a7282),
+                      ),
+                      onPressed: controller.togglePasswordVisibility,
+                    ),
+                  )),
 
                   const SizedBox(height: 16),
 
-                  buildInput("Confirm Password",
-                      icon: Icons.lock_outline, isPassword: true),
+                  Obx(() => buildInput(
+                    "Confirm Password",
+                    icon: Icons.lock_outline,
+                    isPassword: !controller.isConfirmPasswordVisible.value,
+                    controller: controller.confirmPasswordController,
+                    errorText: controller.confirmPasswordError,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.isConfirmPasswordVisible.value
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: const Color(0xff6a7282),
+                      ),
+                      onPressed: controller.toggleConfirmPasswordVisibility,
+                    ),
+                  )),
 
                   const SizedBox(height: 24),
 
                   /// Sign Up Button
-                  SizedBox(
+                  Obx(() => SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
@@ -118,11 +206,22 @@ class SignUpScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: () {
-                        Get.offAll(()=>ForgotPasswordScreen());
-
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () {
+                        controller.registerUser();
+                        Get.to(()=>VerifyCodeScreen());
                       },
-                      child: const Text(
+                      child: controller.isLoading.value
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                          : const Text(
                         "Sign Up",
                         style: TextStyle(
                           color: Colors.white,
@@ -131,7 +230,7 @@ class SignUpScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
+                  )),
 
                   const SizedBox(height: 24),
 
@@ -160,17 +259,23 @@ class SignUpScreen extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   /// Google Button
-                  socialButton(
-                    icon: Icons.g_mobiledata,
-                    text: "Continue with Google",
+                  GestureDetector(
+                    onTap: () => controller.continueWithGoogle(),
+                    child: socialButton(
+                      icon: Icons.g_mobiledata,
+                      text: "Continue with Google",
+                    ),
                   ),
 
                   const SizedBox(height: 12),
 
                   /// Apple Button
-                  socialButton(
-                    icon: Icons.apple,
-                    text: "Continue with Apple",
+                  GestureDetector(
+                    onTap: () => controller.continueWithApple(),
+                    child: socialButton(
+                      icon: Icons.apple,
+                      text: "Continue with Apple",
+                    ),
                   ),
 
                   const SizedBox(height: 20),
@@ -178,14 +283,19 @@ class SignUpScreen extends StatelessWidget {
                   /// Login text
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         "Already have an account? ",
                         style: TextStyle(color: Color(0xffa1a1a1)),
                       ),
-                      Text(
-                        "Login",
-                        style: TextStyle(color: Color(0xfffafafa)),
+                      GestureDetector(
+                        onTap: () {
+                          Get.back(); // Go back to login screen
+                        },
+                        child: const Text(
+                          "Login",
+                          style: TextStyle(color: Color(0xfffafafa)),
+                        ),
                       ),
                     ],
                   ),
@@ -200,30 +310,49 @@ class SignUpScreen extends StatelessWidget {
     );
   }
 
-  /// Input Field
+  /// Input Field (Updated to use controller and error handling)
   static Widget buildInput(
       String label, {
         IconData? icon,
         bool isPassword = false,
+        required TextEditingController controller,
+        required RxString errorText,
+        bool isOptional = false,
+        Widget? suffixIcon,
       }) {
-    return Column(
+    return Obx(() => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xfffafafa),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xfffafafa),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (isOptional)
+              const Text(
+                " (Optional)",
+                style: TextStyle(
+                  color: Color(0xff6a7282),
+                  fontSize: 12,
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         TextField(
+          controller: controller,
           obscureText: isPassword,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            prefixIcon:
-            icon != null ? Icon(icon, color: const Color(0xff6a7282)) : null,
+            prefixIcon: icon != null
+                ? Icon(icon, color: const Color(0xff6a7282))
+                : null,
+            suffixIcon: suffixIcon,
             filled: true,
             fillColor: const Color(0xff101828),
             border: OutlineInputBorder(
@@ -238,10 +367,23 @@ class SignUpScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xff615fff)),
             ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            errorText: errorText.value.isEmpty ? null : errorText.value,
+            errorStyle: const TextStyle(
+              color: Colors.red,
+              fontSize: 12,
+            ),
           ),
         ),
       ],
-    );
+    ));
   }
 
   /// Social Button
