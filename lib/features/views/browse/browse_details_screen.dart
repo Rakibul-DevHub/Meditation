@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+import 'package:outdoor_therapy/features/views/browse/controller/browse_controller.dart';
+import 'package:outdoor_therapy/model/category_model.dart';
+import 'package:outdoor_therapy/core/widget/player_controller.dart';
+import 'package:outdoor_therapy/features/views/now_playing/now_playing_screen.dart';
 
 class BrowseDetailsScreen extends StatefulWidget {
+  final String categoryId;
   final String categoryName;
   final int soundCount;
   final IconData icon;
@@ -10,6 +18,7 @@ class BrowseDetailsScreen extends StatefulWidget {
 
   const BrowseDetailsScreen({
     super.key,
+    required this.categoryId,
     required this.categoryName,
     required this.soundCount,
     required this.icon,
@@ -22,147 +31,167 @@ class BrowseDetailsScreen extends StatefulWidget {
 }
 
 class _BrowseDetailsScreenState extends State<BrowseDetailsScreen> {
-  final List<_SoundTrack> _soundTracks = [
-    _SoundTrack(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-    ),
-    _SoundTrack(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-    ),
-    _SoundTrack(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-    ),
-    _SoundTrack(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-    ),
-    _SoundTrack(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-    ),
-  ];
+  final BrowseController _controller = Get.find<BrowseController>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch details for this specific category
+    _controller.fetchCategoryDetails(widget.categoryId);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E1A),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // ── App Bar with Back Button and Title ───────────────────
-          SliverAppBar(
-            expandedHeight: 280,
-            pinned: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: Padding(
-              padding: const EdgeInsets.only(left: 8, top: 8),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
+      body: Obx(() {
+        if (_controller.isDetailsLoading.value) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF117A65)),
+          );
+        }
+
+        if (_controller.detailsError.isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _controller.detailsError.value,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => _controller.fetchCategoryDetails(widget.categoryId),
+                  child: const Text('Try Again'),
+                ),
+              ],
             ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Background image with gradient
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: widget.gradient,
+          );
+        }
+
+        final category = _controller.selectedCategory.value;
+        final tracks = category?.tracks ?? [];
+
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // ── App Bar with Back Button and Title ───────────────────
+            SliverAppBar(
+              expandedHeight: 280,
+              pinned: true,
+              backgroundColor: const Color(0xFF0A0E1A),
+              elevation: 0,
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 8, top: 8),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background image with gradient fallback
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: widget.gradient,
+                        ),
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: widget.imagePath,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => const SizedBox.expand(),
                       ),
                     ),
-                    child: Image.asset(
-                      widget.imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.expand(),
+                    // Dark overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            const Color(0xFF0A0E1A).withOpacity(0.9),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  // Dark overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          const Color(0xFF0A0E1A).withOpacity(0.9),
+                    // Category info
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 30,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            category?.name ?? widget.categoryName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 0,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${category?.totalTracks ?? widget.soundCount} sounds',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     ),
-                  ),
-                  // Category info
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 30,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.categoryName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 0,
-                            vertical: 6,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${widget.soundCount} sounds',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Sound Tracks List ────────────────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) => _SoundTrackCard(
-                  track: _soundTracks[index],
-                  isLast: index == _soundTracks.length - 1,
+                  ],
                 ),
-                childCount: _soundTracks.length,
               ),
             ),
-          ),
-        ],
-      ),
+
+            // ── Sound Tracks List ────────────────────────────────────
+            if (tracks.isEmpty)
+              const SliverFillRemaining(
+                child: Center(
+                  child: Text(
+                    'No tracks available in this category',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _SoundTrackCard(
+                      track: tracks[index],
+                      isLast: index == tracks.length - 1,
+                    ),
+                    childCount: tracks.length,
+                  ),
+                ),
+              ),
+          ],
+        );
+      }),
     );
   }
 }
@@ -171,7 +200,7 @@ class _BrowseDetailsScreenState extends State<BrowseDetailsScreen> {
 // Sound Track Card
 // ─────────────────────────────────────────────────────────────────────────────
 class _SoundTrackCard extends StatefulWidget {
-  final _SoundTrack track;
+  final TrackModel track;
   final bool isLast;
 
   const _SoundTrackCard({
@@ -184,7 +213,7 @@ class _SoundTrackCard extends StatefulWidget {
 }
 
 class _SoundTrackCardState extends State<_SoundTrackCard> {
-  bool _isPlaying = false;
+  final PlayerController _playerController = Get.put(PlayerController());
 
   @override
   Widget build(BuildContext context) {
@@ -197,20 +226,19 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
               // Play button
               GestureDetector(
                 onTap: () {
-                  setState(() {
-                    _isPlaying = !_isPlaying;
-                  });
+                  _playerController.playTrack(widget.track);
+                  Get.to(() => const NowPlayingScreen());
                 },
                 child: Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF1A5276),
-                        const Color(0xFF117A65),
+                        Color(0xFF1A5276),
+                        Color(0xFF117A65),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
@@ -222,60 +250,78 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                  child: Obx(() {
+                    final isCurrentTrack = _playerController.currentTrack.value?.id == widget.track.id;
+                    final isPlaying = _playerController.isPlaying.value;
+
+                    return Icon(
+                      (isCurrentTrack && isPlaying) ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    );
+                  }),
                 ),
               ),
               const SizedBox(width: 16),
 
-              // Track info
+              // Track info (Tap anywhere on info to also play)
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          widget.track.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            widget.track.duration,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                child: GestureDetector(
+                  onTap: () {
+                    _playerController.playTrack(widget.track);
+                    Get.to(() => const NowPlayingScreen());
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.track.title ?? 'Untitled',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.track.description,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.45),
-                        fontSize: 13,
+                          const SizedBox(width: 8),
+                          if (widget.track.durationSeconds != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                _formatDuration(widget.track.durationSeconds!),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.track.description ?? widget.track.tagline ?? 'No description available',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.45),
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -283,14 +329,18 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      // TODO: Toggle Favorite API
+                    },
                     icon: Icon(
                       Icons.favorite_border,
                       color: Colors.white.withOpacity(0.5),
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      // TODO: Download API
+                    },
                     icon: Icon(
                       Icons.file_download_outlined,
                       color: Colors.white.withOpacity(0.5),
@@ -310,19 +360,10 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
       ],
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Data Model
-// ─────────────────────────────────────────────────────────────────────────────
-class _SoundTrack {
-  final String title;
-  final String duration;
-  final String description;
-
-  const _SoundTrack({
-    required this.title,
-    required this.duration,
-    required this.description,
-  });
+  String _formatDuration(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
 }

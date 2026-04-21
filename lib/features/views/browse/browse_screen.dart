@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:outdoor_therapy/features/views/browse/browse_details_screen.dart';
+import 'package:outdoor_therapy/features/views/browse/controller/browse_controller.dart';
+import 'package:outdoor_therapy/model/category_model.dart';
 
 class BrowseScreen extends StatefulWidget {
   const BrowseScreen({super.key});
@@ -12,65 +16,15 @@ class BrowseScreen extends StatefulWidget {
 
 class _BrowseScreenState extends State<BrowseScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final BrowseController _controller = Get.put(BrowseController());
 
-  final List<_Category> _categories = [
-    _Category(
-      name: 'Rain',
-      soundCount: 12,
-      icon: Icons.water_drop_outlined,
-      gradient: [Color(0xFF1B3A4B), Color(0xFF0D2137)],
-      imagePath: 'assets/images/dummy_image.jpg',
-    ),
-    _Category(
-      name: 'Ocean',
-      soundCount: 12,
-      icon: Icons.waves_outlined,
-      gradient: [Color(0xFF1A5276), Color(0xFF117A65)],
-      imagePath: 'assets/images/dummy_image2.jpg',
-    ),
-    _Category(
-      name: 'Forest',
-      soundCount: 12,
-      icon: Icons.forest_outlined,
-      gradient: [Color(0xFF1E3A1E), Color(0xFF2D5A27)],
-      imagePath: 'assets/images/dummy_image2.jpg',
-    ),
-    _Category(
-      name: 'Wind',
-      soundCount: 12,
-      icon: Icons.air_outlined,
-      gradient: [Color(0xFF8D9DB6), Color(0xFF6B7A8D)],
-      imagePath: 'assets/images/dummy_image.jpg',
-    ),
-    _Category(
-      name: 'White Noise',
-      soundCount: 12,
-      icon: Icons.graphic_eq_outlined,
-      gradient: [Color(0xFF2C3E50), Color(0xFF4A5568)],
-      imagePath: 'assets/images/dummy_image2.jpg',
-    ),
-    _Category(
-      name: 'Thunderstorm',
-      soundCount: 12,
-      icon: Icons.bolt_outlined,
-      gradient: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-      imagePath: 'assets/images/dummy_image3.jpg',
-    ),
-    _Category(
-      name: 'Fire',
-      soundCount: 8,
-      icon: Icons.local_fire_department_outlined,
-      gradient: [Color(0xFF7B2D00), Color(0xFF4A1500)],
-      imagePath: 'assets/images/dummy_image.jpg',
-    ),
-    _Category(
-      name: 'Birds',
-      soundCount: 15,
-      icon: Icons.flutter_dash_outlined,
-      gradient: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
-      imagePath: 'assets/images/dummy_image.jpg',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      _controller.filterCategories(_searchController.text);
+    });
+  }
 
   @override
   void dispose() {
@@ -134,29 +88,75 @@ class _BrowseScreenState extends State<BrowseScreen> {
             ),
 
             // ── Grid ───────────────────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
-              sliver: SliverGrid(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) => _CategoryCard(
-                    category: _categories[index],
+            Obx(() {
+              if (_controller.isCategoriesLoading.value) {
+                return const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF117A65)),
                   ),
-                  childCount: _categories.length,
+                );
+              }
+
+              if (_controller.categoriesError.isNotEmpty) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _controller.categoriesError.value,
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => _controller.fetchCategories(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF117A65),
+                          ),
+                          child: const Text('Try Again'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              if (_controller.filteredCategories.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(
+                    child: Text(
+                      'No categories found',
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                sliver: SliverGrid(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _CategoryCard(
+                      category: _controller.filteredCategories[index],
+                    ),
+                    childCount: _controller.filteredCategories.length,
+                  ),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.88,
+                  ),
                 ),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.88,
-                ),
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),
     );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Search bar
@@ -215,7 +215,7 @@ class _SearchBar extends StatelessWidget {
 //  Category card
 // ─────────────────────────────────────────────────────────────────────────────
 class _CategoryCard extends StatefulWidget {
-  final _Category category;
+  final CategoryModel category;
   const _CategoryCard({required this.category});
 
   @override
@@ -226,6 +226,10 @@ class _CategoryCardState extends State<_CategoryCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnim;
+
+  // Professional mapping for categories that don't have these in the API
+  static const List<Color> _defaultGradient = [Color(0xFF1B3A4B), Color(0xFF0D2137)];
+  static const IconData _defaultIcon = Icons.music_note_outlined;
 
   @override
   void initState() {
@@ -255,18 +259,18 @@ class _CategoryCardState extends State<_CategoryCard>
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) => _controller.reverse(),
       onTapCancel: () => _controller.reverse(),
-      // In _CategoryCardState, update the onTap:
       onTap: () {
         Navigator.push(
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 BrowseDetailsScreen(
-                  categoryName: cat.name,
-                  soundCount: cat.soundCount,
-                  icon: cat.icon,
-                  gradient: cat.gradient,
-                  imagePath: cat.imagePath,
+                  categoryId: cat.id ?? '',
+                  categoryName: cat.name ?? 'Category',
+                  soundCount: cat.totalTracks ?? 0,
+                  icon: _defaultIcon, // You can map this based on cat.name if needed
+                  gradient: _defaultGradient,
+                  imagePath: cat.coverImageUrl ?? '',
                 ),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               const begin = Offset(1.0, 0.0);
@@ -293,7 +297,7 @@ class _CategoryCardState extends State<_CategoryCard>
             fit: StackFit.expand,
             children: [
               // ── Background image ──────────────────────────────────
-              _BackgroundImage(imagePath: cat.imagePath, gradient: cat.gradient),
+              _BackgroundImage(imagePath: cat.coverImageUrl ?? '', gradient: _defaultGradient),
 
               // ── Bottom info overlay (frosted glass) ───────────────
               Positioned(
@@ -310,7 +314,7 @@ class _CategoryCardState extends State<_CategoryCard>
   }
 }
 
-// Background: tries image first, falls back to gradient
+// Background: tries network image first, falls back to gradient
 class _BackgroundImage extends StatelessWidget {
   final String imagePath;
   final List<Color> gradient;
@@ -330,10 +334,11 @@ class _BackgroundImage extends StatelessWidget {
           colors: gradient,
         ),
       ),
-      child: Image.asset(
-        imagePath,
+      child: CachedNetworkImage(
+        imageUrl: imagePath,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const SizedBox.expand(),
+        errorWidget: (_, __, ___) => const SizedBox.expand(),
+        placeholder: (_, __) => Container(color: Colors.white10),
       ),
     );
   }
@@ -341,7 +346,7 @@ class _BackgroundImage extends StatelessWidget {
 
 // Frosted bottom label
 class _CardInfoOverlay extends StatelessWidget {
-  final _Category category;
+  final CategoryModel category;
   const _CardInfoOverlay({required this.category});
 
   @override
@@ -362,7 +367,7 @@ class _CardInfoOverlay extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Icon badge
+              // Icon badge from URL or Default
               Container(
                 width: 32,
                 height: 32,
@@ -374,11 +379,19 @@ class _CardInfoOverlay extends StatelessWidget {
                     width: 0.8,
                   ),
                 ),
-                child: Icon(
-                  category.icon,
-                  size: 16,
-                  color: Colors.white.withOpacity(0.9),
-                ),
+                child: category.iconUrl != null && category.iconUrl!.isNotEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: CachedNetworkImage(
+                        imageUrl: category.iconUrl!,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.music_note_outlined,
+                      size: 16,
+                      color: Colors.white,
+                    ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -386,7 +399,7 @@ class _CardInfoOverlay extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      category.name,
+                      category.name ?? '',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
@@ -396,7 +409,7 @@ class _CardInfoOverlay extends StatelessWidget {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      '${category.soundCount} Sounds',
+                      '${category.totalTracks ?? 0} Sounds',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.55),
                         fontSize: 11,

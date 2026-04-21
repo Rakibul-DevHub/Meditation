@@ -8,4 +8,10 @@ class AppUrl {
   static const String verifyEmailOtp = '$baseUrl/auth/verify-email';
   static const String login = '$baseUrl/auth/login';
 
+  // Category & Tracks
+  static const String categories = '$baseUrl/app/categories';
+  static String categoryDetails(String id) => '$baseUrl/app/categories/$id';
+  static String trackDetails(String id) => '$baseUrl/app/tracks/$id';
+  static const String playHistory = '$baseUrl/app/play-history';
+
 }

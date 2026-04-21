@@ -112,13 +112,7 @@ class CustomPlayCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NowPlayingScreen(
-          title: track['title'] ?? 'Unknown',
-          image: track['image'] ?? 'assets/gif/playing.gif', // Keep GIF as fallback
-          duration: track['duration'] ?? '2:25',
-          description: track['description'] ?? 'Beautiful track',
-          category: track['category'] ?? 'song',
-        ),
+        builder: (context) => const NowPlayingScreen(),
       ),
     );
   }
