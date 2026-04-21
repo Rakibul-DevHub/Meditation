@@ -12,6 +12,9 @@
 .swiftpm/
 migrate_working_dir/
 
+files to be ignore/
+outdoor_therapy_postman.json
+
 # IntelliJ related
 *.iml
 *.ipr
