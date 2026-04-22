@@ -1,10 +1,13 @@
-
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:outdoor_therapy/features/views/now_playing/now_playing_screen.dart';
+import 'package:outdoor_therapy/model/category_model.dart';
+import 'package:outdoor_therapy/core/widget/player_controller.dart';
 
 class CustomPlayCard extends StatelessWidget {
-  final Map<String, dynamic> track;
+  final TrackModel track;
   final bool isPlaying;
   final VoidCallback onPlayPause;
   final VoidCallback onClose;
@@ -43,8 +46,8 @@ class CustomPlayCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  // Track thumbnail - using GIF
-                  _VinylAvatar(image: 'assets/gif/playing.gif'),
+                  // Track thumbnail - using URL or GIF fallback
+                  _VinylAvatar(imageUrl: track.coverImageUrl),
 
                   const SizedBox(width: 14),
 
@@ -55,7 +58,7 @@ class CustomPlayCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          track['title'] ?? 'Unknown Track',
+                          track.title ?? 'Unknown Track',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -67,7 +70,7 @@ class CustomPlayCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          track['subtitle'] ?? 'Meditation',
+                          track.categoryName ?? 'Meditation',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.55),
                             fontSize: 13,
@@ -109,12 +112,7 @@ class CustomPlayCard extends StatelessWidget {
   }
 
   void _navigateToNowPlaying(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const NowPlayingScreen(),
-      ),
-    );
+    Get.to(() => const NowPlayingScreen());
   }
 }
 
@@ -161,11 +159,11 @@ class _PlayPauseButton extends StatelessWidget {
   }
 }
 
-// Vinyl avatar widget - supports GIF images
+// Vinyl avatar widget - supports Network Images and local fallback
 class _VinylAvatar extends StatelessWidget {
-  final String image;
+  final String? imageUrl;
 
-  const _VinylAvatar({required this.image});
+  const _VinylAvatar({this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -191,16 +189,20 @@ class _VinylAvatar extends StatelessWidget {
               ),
             ),
           ),
-          // Album art - works with both static images and GIFs
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              image: DecorationImage(
-                image: AssetImage(image),
-                fit: BoxFit.cover,
-              ),
+          // Album art
+          ClipOval(
+            child: Container(
+              width: 38,
+              height: 38,
+              color: Colors.black26,
+              child: imageUrl != null && imageUrl!.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: imageUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => const CircularProgressIndicator(strokeWidth: 2),
+                    errorWidget: (_, __, ___) => Image.asset('assets/gif/playing.gif', fit: BoxFit.cover),
+                  )
+                : Image.asset('assets/gif/playing.gif', fit: BoxFit.cover),
             ),
           ),
           // Centre dot
@@ -217,5 +219,3 @@ class _VinylAvatar extends StatelessWidget {
     );
   }
 }
-
-

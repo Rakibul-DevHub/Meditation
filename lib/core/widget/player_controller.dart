@@ -18,6 +18,7 @@ class PlayerController extends GetxController {
   final Rx<Duration> duration = Duration.zero.obs;
   final Rxn<TrackModel> currentTrack = Rxn<TrackModel>();
   final RxBool isLoading = false.obs;
+  final RxBool showMiniPlayer = false.obs;
 
   Timer? _historyTimer;
 
@@ -59,6 +60,7 @@ class PlayerController extends GetxController {
   Future<void> playTrack(TrackModel track) async {
     try {
       isLoading.value = true;
+      showMiniPlayer.value = true;
       
       // 1. Save progress of previous track if any
       if (currentTrack.value != null) {
@@ -106,6 +108,13 @@ class PlayerController extends GetxController {
 
   void seek(Duration pos) {
     player.seek(pos);
+  }
+
+  void stopAndHidePlayer() {
+    player.stop();
+    showMiniPlayer.value = false;
+    currentTrack.value = null;
+    _historyTimer?.cancel();
   }
 
   // Save playback progress to backend (Section 3.C of guide)

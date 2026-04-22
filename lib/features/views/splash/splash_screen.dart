@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:outdoor_therapy/core/app_colors.dart';
 
 import '../onboard/onboard_screen.dart';
 
@@ -33,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backGroundColor,
       body: Center(
         child: Image.asset(
           'assets/gif/outdoor_therapy.gif',

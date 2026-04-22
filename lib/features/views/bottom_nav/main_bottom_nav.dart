@@ -579,15 +579,14 @@ class _MainBottomNavState extends State<MainBottomNav> {
 // main_bottom_nav.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
 import 'package:outdoor_therapy/features/views/browse/browse_screen.dart';
 import 'package:outdoor_therapy/features/views/download/download_page.dart';
 import 'package:outdoor_therapy/features/views/favorite/favorite_screen.dart';
 import 'package:outdoor_therapy/features/views/menu/menu_screen.dart';
-import 'package:outdoor_therapy/features/views/now_playing/now_playing_screen.dart';
 import 'package:outdoor_therapy/core/widget/custom_play_card.dart';
-// import 'package:outdoor_therapy/core/services/player_service.dart';
+import 'package:outdoor_therapy/core/widget/player_controller.dart';
 import '../../../core/app_colors.dart';
-import '../../../core/widget/player_service.dart';
 import '../home/home_screen.dart';
 
 class MainBottomNav extends StatefulWidget {
@@ -599,7 +598,7 @@ class MainBottomNav extends StatefulWidget {
 
 class _MainBottomNavState extends State<MainBottomNav> {
   int _selectedIndex = 0;
-  final PlayerService _playerService = PlayerService();
+  final PlayerController _playerController = Get.put(PlayerController());
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -614,36 +613,26 @@ class _MainBottomNavState extends State<MainBottomNav> {
       'icon': 'assets/icons/home_inactive.svg',
       'activeIcon': 'assets/icons/home.svg',
       'label': 'Home',
-      'fallbackIcon': Icons.home_outlined,
-      'fallbackActiveIcon': Icons.home,
     },
     {
       'icon': 'assets/icons/browse_inactive.svg',
       'activeIcon': 'assets/icons/browse.svg',
       'label': 'Browse',
-      'fallbackIcon': Icons.explore_outlined,
-      'fallbackActiveIcon': Icons.explore,
     },
     {
       'icon': 'assets/icons/favorite_inactive.svg',
       'activeIcon': 'assets/icons/favorite.svg',
       'label': 'Favourites',
-      'fallbackIcon': Icons.favorite_outline,
-      'fallbackActiveIcon': Icons.favorite,
     },
     {
       'icon': 'assets/icons/download_inactive.svg',
       'activeIcon': 'assets/icons/download.svg',
       'label': 'Downloads',
-      'fallbackIcon': Icons.download_outlined,
-      'fallbackActiveIcon': Icons.download,
     },
     {
       'icon': 'assets/icons/menu_inactive.svg',
       'activeIcon': 'assets/icons/menu.svg',
       'label': 'Menu',
-      'fallbackIcon': Icons.menu_outlined,
-      'fallbackActiveIcon': Icons.menu,
     },
   ];
 
@@ -651,12 +640,6 @@ class _MainBottomNavState extends State<MainBottomNav> {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  @override
-  void dispose() {
-    _playerService.dispose();
-    super.dispose();
   }
 
   @override
@@ -670,30 +653,20 @@ class _MainBottomNavState extends State<MainBottomNav> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Mini Player - shows across all screens when active
-          ValueListenableBuilder<bool>(
-            valueListenable: _playerService.showMiniPlayer,
-            builder: (context, showPlayer, _) {
-              return ValueListenableBuilder<Map<String, dynamic>?>(
-                valueListenable: _playerService.currentTrack,
-                builder: (context, track, _) {
-                  if (!showPlayer || track == null) return const SizedBox.shrink();
+          // Mini Player - using Obx for global state sync
+          Obx(() {
+            final track = _playerController.currentTrack.value;
+            final showPlayer = _playerController.showMiniPlayer.value;
 
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: _playerService.isPlaying,
-                    builder: (context, isPlaying, _) {
-                      return CustomPlayCard(
-                        track: track,
-                        isPlaying: isPlaying,
-                        onPlayPause: _playerService.togglePlayPause,
-                        onClose: _playerService.closePlayer,
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          ),
+            if (!showPlayer || track == null) return const SizedBox.shrink();
+
+            return CustomPlayCard(
+              track: track,
+              isPlaying: _playerController.isPlaying.value,
+              onPlayPause: _playerController.togglePlayPause,
+              onClose: _playerController.stopAndHidePlayer,
+            );
+          }),
           _buildBottomNav(),
         ],
       ),
@@ -702,7 +675,7 @@ class _MainBottomNavState extends State<MainBottomNav> {
 
   Widget _buildBottomNav() {
     return Container(
-      height: 80,
+      height: 60,
       decoration: BoxDecoration(
         color: AppColors.mainBottomNavColor,
         boxShadow: [
@@ -727,12 +700,12 @@ class _MainBottomNavState extends State<MainBottomNav> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 26,
-                    height: 26,
+                    width: 20,
+                    height: 20,
                     child: SvgPicture.asset(
                       isSelected ? item['activeIcon'] : item['icon'],
-                      width: 26,
-                      height: 26,
+                      width: 20,
+                      height: 20,
                       colorFilter: ColorFilter.mode(
                         isSelected ? AppColors.whiteColor : Colors.grey,
                         BlendMode.srcIn,
