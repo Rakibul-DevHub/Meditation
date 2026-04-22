@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/app_colors.dart';
 import '../../../core/widget/player_controller.dart';
 import '../../../model/category_model.dart';
 
@@ -15,14 +16,71 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
   final PlayerController _playerController = Get.find<PlayerController>();
   
   bool isShuffled = false;
-  bool isLooped = false;
-  String? selectedSleepTimer;
+  String? selectedSleepTimer = "Off";
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds.remainder(60);
     return "${twoDigits(minutes)}:${twoDigits(seconds)}";
+  }
+
+  void _showSleepTimerSheet() {
+    final List<String> timers = ["Off", "15 min", "30 min", "45 min", "1 hour"];
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xff0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.bedtime, color: Colors.white, size: 18),
+                  SizedBox(width: 10),
+                  Text(
+                    "Sleep time",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Divider(color: Color(0xff1E293B)),
+              ...timers.map((timer) => ListTile(
+                title: Text(
+                  timer,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: selectedSleepTimer == timer ? const Color(0xff6366F1) : Colors.white70,
+                    fontSize: 16,
+                    fontWeight: selectedSleepTimer == timer ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+                onTap: () {
+                  setState(() {
+                    selectedSleepTimer = timer;
+                  });
+                  Navigator.pop(context);
+                  // TODO: Implement timer logic in PlayerController
+                },
+              )),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -58,7 +116,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 10),
+                const SizedBox(height: 40),
 
                 /// Album Art
                 ClipRRect(
@@ -66,8 +124,8 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   child: CachedNetworkImage(
                     imageUrl: track.coverImageUrl ?? '',
                     width: double.infinity,
-                    height: 340,
-                    fit: BoxFit.cover,
+                    height: 300,
+                    fit: BoxFit.fill,
                     placeholder: (_, __) => Container(color: Colors.white10),
                     errorWidget: (_, __, ___) => Container(color: Colors.white10, child: const Icon(Icons.music_note, color: Colors.white54, size: 50)),
                   ),
@@ -102,11 +160,11 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           ]),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.white),
+                      icon: const Icon(Icons.favorite_border, color: AppColors.lightGreyColor),
                       onPressed: () {},
                     ),
                     IconButton(
-                      icon: const Icon(Icons.cloud_download_outlined, color: Colors.white),
+                      icon: const Icon(Icons.cloud_download_outlined, color: AppColors.lightGreyColor),
                       onPressed: () {},
                     ),
                   ],
@@ -128,7 +186,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                     value: _playerController.position.value.inSeconds.toDouble().clamp(0, _playerController.duration.value.inSeconds.toDouble()),
                     max: _playerController.duration.value.inSeconds.toDouble() > 0 
                         ? _playerController.duration.value.inSeconds.toDouble() 
-                        : 100, // Fallback if duration is unknown
+                        : 100,
                     onChanged: (value) {
                       _playerController.seek(Duration(seconds: value.toInt()));
                     },
@@ -150,7 +208,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 36),
+                const SizedBox(height: 60),
 
                 /// Controls
                 Row(
@@ -158,13 +216,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   children: [
                     IconButton(
                       icon: Icon(
-                        Icons.repeat,
-                        color: isShuffled ? const Color(0xff6366F1) : const Color(0xff94A3B8),
+                        Icons.repeat_rounded,
+                        color: AppColors.lightGreyColor,
                         size: 26,
                       ),
                       onPressed: () => setState(() => isShuffled = !isShuffled),
                     ),
-                    const Icon(Icons.skip_previous, color: Colors.white, size: 32),
+                    const Icon(Icons.skip_previous_rounded, color: AppColors.lightGreyColor, size: 32),
 
                     /// Play/Pause button
                     Container(
@@ -175,7 +233,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                         ? const Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Colors.black, strokeWidth: 3))
                         : IconButton(
                             icon: Icon(
-                              _playerController.isPlaying.value ? Icons.pause : Icons.play_arrow,
+                              _playerController.isPlaying.value ? Icons.pause_rounded : Icons.play_arrow_rounded,
                               color: Colors.black,
                               size: 34,
                             ),
@@ -183,44 +241,19 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           ),
                     ),
 
-                    const Icon(Icons.skip_next, color: Colors.white, size: 32),
+                    const Icon(Icons.skip_next_rounded, color: AppColors.lightGreyColor, size: 32),
                     IconButton(
-                      icon: const Icon(Icons.volume_up, color: Color(0xff94A3B8), size: 26),
-                      onPressed: () => setState(() => isLooped = !isLooped),
+                      icon: Icon(
+                        Icons.timer_outlined, 
+                        color: selectedSleepTimer != "Off" ? const Color(0xff6366F1) : AppColors.lightGreyColor, 
+                        size: 26
+                      ),
+                      onPressed: _showSleepTimerSheet,
                     ),
                   ],
                 ),
 
                 const Spacer(),
-
-                /// Sleep dropdown
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xff0F172A),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xff1E293B)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      dropdownColor: const Color(0xff0F172A),
-                      value: selectedSleepTimer,
-                      hint: const Row(
-                        children: [
-                          Icon(Icons.bedtime, color: Color(0xff94A3B8), size: 18),
-                          SizedBox(width: 10),
-                          Text("Sleep", style: TextStyle(color: Color(0xff94A3B8), fontSize: 14)),
-                        ],
-                      ),
-                      icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xff94A3B8)),
-                      items: ["15 min", "30 min", "45 min", "1 hour", "End of track"].map((e) {
-                        return DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: Colors.white)));
-                      }).toList(),
-                      onChanged: (value) => setState(() => selectedSleepTimer = value),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 24),
               ],
             ),
