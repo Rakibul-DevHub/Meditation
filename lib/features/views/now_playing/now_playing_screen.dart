@@ -15,7 +15,6 @@ class NowPlayingScreen extends StatefulWidget {
 class _NowPlayingScreenState extends State<NowPlayingScreen> {
   final PlayerController _playerController = Get.find<PlayerController>();
   
-  bool isShuffled = false;
   String? selectedSleepTimer = "Off";
 
   String _formatDuration(Duration duration) {
@@ -72,7 +71,6 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                     selectedSleepTimer = timer;
                   });
                   Navigator.pop(context);
-                  // TODO: Implement timer logic in PlayerController
                 },
               )),
               const SizedBox(height: 10),
@@ -119,15 +117,18 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                 const SizedBox(height: 40),
 
                 /// Album Art
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: CachedNetworkImage(
-                    imageUrl: track.coverImageUrl ?? '',
-                    width: double.infinity,
-                    height: 300,
-                    fit: BoxFit.fill,
-                    placeholder: (_, __) => Container(color: Colors.white10),
-                    errorWidget: (_, __, ___) => Container(color: Colors.white10, child: const Icon(Icons.music_note, color: Colors.white54, size: 50)),
+                Hero(
+                  tag: 'track-image-${track.id}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: CachedNetworkImage(
+                      imageUrl: track.coverImageUrl ?? '',
+                      width: double.infinity,
+                      height: 300,
+                      fit: BoxFit.fill,
+                      placeholder: (_, __) => Container(color: Colors.white10),
+                      errorWidget: (_, __, ___) => Container(color: Colors.white10, child: const Icon(Icons.music_note, color: Colors.white54, size: 50)),
+                    ),
                   ),
                 ),
 
@@ -214,15 +215,23 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
+                    // Playback Mode Toggle (Shuffle/Repeat/Continuous)
                     IconButton(
                       icon: Icon(
-                        Icons.repeat_rounded,
-                        color: AppColors.lightGreyColor,
+                        _getPlaybackIcon(),
+                        color: _playerController.playbackMode.value == PlaybackMode.continuous 
+                            ? AppColors.lightGreyColor 
+                            : const Color(0xff6366F1),
                         size: 26,
                       ),
-                      onPressed: () => setState(() => isShuffled = !isShuffled),
+                      onPressed: _playerController.cyclePlaybackMode,
                     ),
-                    const Icon(Icons.skip_previous_rounded, color: AppColors.lightGreyColor, size: 32),
+
+                    // Previous Button
+                    IconButton(
+                      icon: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 32),
+                      onPressed: _playerController.playPrevious,
+                    ),
 
                     /// Play/Pause button
                     Container(
@@ -241,7 +250,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           ),
                     ),
 
-                    const Icon(Icons.skip_next_rounded, color: AppColors.lightGreyColor, size: 32),
+                    // Next Button
+                    IconButton(
+                      icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 32),
+                      onPressed: _playerController.playNext,
+                    ),
+
+                    // Sleep Timer Icon Button
                     IconButton(
                       icon: Icon(
                         Icons.timer_outlined, 
@@ -261,5 +276,17 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
         );
       }),
     );
+  }
+
+  IconData _getPlaybackIcon() {
+    switch (_playerController.playbackMode.value) {
+      case PlaybackMode.shuffle:
+        return Icons.shuffle_rounded;
+      case PlaybackMode.repeatOne:
+        return Icons.repeat_one_rounded;
+      case PlaybackMode.continuous:
+      default:
+        return Icons.repeat_rounded;
+    }
   }
 }

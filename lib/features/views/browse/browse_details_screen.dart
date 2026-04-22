@@ -183,6 +183,8 @@ class _BrowseDetailsScreenState extends State<BrowseDetailsScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => _SoundTrackCard(
                       track: tracks[index],
+                      fullList: tracks,
+                      index: index,
                       isLast: index == tracks.length - 1,
                     ),
                     childCount: tracks.length,
@@ -201,10 +203,14 @@ class _BrowseDetailsScreenState extends State<BrowseDetailsScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _SoundTrackCard extends StatefulWidget {
   final TrackModel track;
+  final List<TrackModel> fullList;
+  final int index;
   final bool isLast;
 
   const _SoundTrackCard({
     required this.track,
+    required this.fullList,
+    required this.index,
     required this.isLast,
   });
 
@@ -226,7 +232,7 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
               // Play button
               GestureDetector(
                 onTap: () {
-                  _playerController.playTrack(widget.track);
+                  _playerController.setPlaylist(widget.fullList, initialIndex: widget.index);
                   Get.to(() => const NowPlayingScreen());
                 },
                 child: Container(
@@ -268,7 +274,7 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
-                    _playerController.playTrack(widget.track);
+                    _playerController.setPlaylist(widget.fullList, initialIndex: widget.index);
                     Get.to(() => const NowPlayingScreen());
                   },
                   child: Column(

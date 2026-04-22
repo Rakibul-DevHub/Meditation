@@ -7,6 +7,8 @@ import '../network/network_caller_dio.dart';
 import '../network/secure_storage_service.dart';
 import '../../model/category_model.dart';
 
+enum PlaybackMode { continuous, shuffle, repeatOne }
+
 class PlayerController extends GetxController {
   final AudioPlayer player = AudioPlayer();
   final NetworkCallerDio _networkCaller = NetworkCallerDio();
@@ -20,7 +22,15 @@ class PlayerController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool showMiniPlayer = false.obs;
 
+  // Playlist State
+  final RxList<TrackModel> playlist = <TrackModel>[].obs;
+  final RxInt currentIndex = 0.obs;
+  
+  // Single button playback mode
+  final Rx<PlaybackMode> playbackMode = PlaybackMode.continuous.obs;
+
   Timer? _historyTimer;
+  ConcatenatingAudioSource? _playlistSource;
 
   @override
   void onInit() {
@@ -29,7 +39,6 @@ class PlayerController extends GetxController {
   }
 
   void _initPlayerListeners() {
-    // Listen to play/pause state
     player.playerStateStream.listen((state) {
       isPlaying.value = state.playing;
       if (state.processingState == ProcessingState.completed) {
@@ -37,14 +46,14 @@ class PlayerController extends GetxController {
       }
     });
 
-    // Listen to position changes
-    player.positionStream.listen((p) {
-      position.value = p;
-    });
+    player.positionStream.listen((p) => position.value = p);
+    player.durationStream.listen((d) => duration.value = d ?? Duration.zero);
 
-    // Listen to duration changes
-    player.durationStream.listen((d) {
-      duration.value = d ?? Duration.zero;
+    player.currentIndexStream.listen((index) {
+      if (index != null && playlist.isNotEmpty) {
+        currentIndex.value = index;
+        currentTrack.value = playlist[index];
+      }
     });
   }
 
@@ -56,44 +65,47 @@ class PlayerController extends GetxController {
     super.onClose();
   }
 
-  // Load and Play a track
-  Future<void> playTrack(TrackModel track) async {
+  Future<void> setPlaylist(List<TrackModel> tracks, {int initialIndex = 0}) async {
     try {
       isLoading.value = true;
       showMiniPlayer.value = true;
       
-      // 1. Save progress of previous track if any
-      if (currentTrack.value != null) {
-        await _savePlayHistory(force: true);
-      }
+      playlist.assignAll(tracks);
+      currentIndex.value = initialIndex;
+      currentTrack.value = tracks[initialIndex];
 
-      currentTrack.value = track;
-      
-      // 2. Set the audio source
-      final String? url = track.audioUrl;
-      if (url == null || url.isEmpty) throw 'Audio URL is missing';
+      _playlistSource = ConcatenatingAudioSource(
+        children: tracks.map((track) => AudioSource.uri(Uri.parse(track.audioUrl ?? ''))).toList(),
+      );
 
-      await player.setUrl(url);
+      await player.setAudioSource(
+        _playlistSource!,
+        initialIndex: initialIndex,
+        initialPosition: Duration(seconds: tracks[initialIndex].playedSeconds ?? 0),
+      );
 
-      // 3. Resume logic (Section 3.C of guide)
-      if (track.playedSeconds != null && track.playedSeconds! > 0) {
-        await player.seek(Duration(seconds: track.playedSeconds!));
-      } else {
-        await player.seek(Duration.zero);
-      }
-
-      // 4. Start playback
       player.play();
-      
-      // 5. Start periodic history saving (every 30 seconds)
       _startHistoryTimer();
-
     } catch (e) {
-      debugPrint('Error playing track: $e');
-      Get.snackbar('Player Error', 'Could not play audio',
-          backgroundColor: Colors.red, colorText: Colors.white);
+      debugPrint('Error setting playlist: $e');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  void cyclePlaybackMode() {
+    if (playbackMode.value == PlaybackMode.continuous) {
+      playbackMode.value = PlaybackMode.shuffle;
+      player.setShuffleModeEnabled(true);
+      player.setLoopMode(LoopMode.all);
+    } else if (playbackMode.value == PlaybackMode.shuffle) {
+      playbackMode.value = PlaybackMode.repeatOne;
+      player.setShuffleModeEnabled(false);
+      player.setLoopMode(LoopMode.one);
+    } else {
+      playbackMode.value = PlaybackMode.continuous;
+      player.setShuffleModeEnabled(false);
+      player.setLoopMode(LoopMode.all);
     }
   }
 
@@ -106,46 +118,41 @@ class PlayerController extends GetxController {
     }
   }
 
-  void seek(Duration pos) {
-    player.seek(pos);
+  void playNext() {
+    if (player.hasNext) player.seekToNext();
   }
+
+  void playPrevious() {
+    if (player.hasPrevious) player.seekToPrevious();
+  }
+
+  void seek(Duration pos) => player.seek(pos);
 
   void stopAndHidePlayer() {
     player.stop();
     showMiniPlayer.value = false;
     currentTrack.value = null;
+    playlist.clear();
     _historyTimer?.cancel();
   }
 
-  // Save playback progress to backend (Section 3.C of guide)
   Future<void> _savePlayHistory({bool force = false}) async {
     final track = currentTrack.value;
-    if (track == null || track.id == null) return;
-
-    // Only save if playing or if forced (pause/stop)
-    if (!player.playing && !force) return;
+    if (track == null || track.id == null || (!player.playing && !force)) return;
 
     final playedSeconds = position.value.inSeconds;
     if (playedSeconds <= 0) return;
 
     final token = await _storage.getAccessToken();
-    
     await _networkCaller.postRequest(
       AppUrl.playHistory,
-      body: {
-        "trackId": track.id,
-        "playedSeconds": playedSeconds,
-      },
-      headers: {
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
+      body: {"trackId": track.id, "playedSeconds": playedSeconds},
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
     );
   }
 
   void _startHistoryTimer() {
     _historyTimer?.cancel();
-    _historyTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _savePlayHistory();
-    });
+    _historyTimer = Timer.periodic(const Duration(seconds: 30), (timer) => _savePlayHistory());
   }
 }
