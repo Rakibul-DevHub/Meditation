@@ -209,7 +209,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
 
                 /// Controls
                 Row(
