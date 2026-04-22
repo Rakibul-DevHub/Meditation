@@ -7,6 +7,7 @@ import 'package:outdoor_therapy/features/views/browse/controller/browse_controll
 import 'package:outdoor_therapy/model/category_model.dart';
 import 'package:outdoor_therapy/core/widget/player_controller.dart';
 import 'package:outdoor_therapy/features/views/now_playing/now_playing_screen.dart';
+import 'package:outdoor_therapy/core/widget/custom_play_card.dart';
 
 class BrowseDetailsScreen extends StatefulWidget {
   final String categoryId;
@@ -32,6 +33,7 @@ class BrowseDetailsScreen extends StatefulWidget {
 
 class _BrowseDetailsScreenState extends State<BrowseDetailsScreen> {
   final BrowseController _controller = Get.find<BrowseController>();
+  final PlayerController _playerController = Get.find<PlayerController>();
 
   @override
   void initState() {
@@ -44,6 +46,19 @@ class _BrowseDetailsScreenState extends State<BrowseDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E1A),
+      bottomNavigationBar: Obx(() {
+        final track = _playerController.currentTrack.value;
+        final showPlayer = _playerController.showMiniPlayer.value;
+
+        if (!showPlayer || track == null) return const SizedBox.shrink();
+
+        return CustomPlayCard(
+          track: track,
+          isPlaying: _playerController.isPlaying.value,
+          onPlayPause: _playerController.togglePlayPause,
+          onClose: _playerController.stopAndHidePlayer,
+        );
+      }),
       body: Obx(() {
         if (_controller.isDetailsLoading.value) {
           return const Center(
@@ -178,7 +193,7 @@ class _BrowseDetailsScreenState extends State<BrowseDetailsScreen> {
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 120), // Increased bottom padding for mini-player
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) => _SoundTrackCard(
@@ -219,7 +234,7 @@ class _SoundTrackCard extends StatefulWidget {
 }
 
 class _SoundTrackCardState extends State<_SoundTrackCard> {
-  final PlayerController _playerController = Get.put(PlayerController());
+  final PlayerController _playerController = Get.find<PlayerController>();
 
   @override
   Widget build(BuildContext context) {
