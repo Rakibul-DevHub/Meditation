@@ -586,6 +586,7 @@ import 'package:outdoor_therapy/features/views/favorite/favorite_screen.dart';
 import 'package:outdoor_therapy/features/views/menu/menu_screen.dart';
 import 'package:outdoor_therapy/core/widget/custom_play_card.dart';
 import 'package:outdoor_therapy/core/widget/player_controller.dart';
+import 'package:outdoor_therapy/features/views/browse/controller/browse_controller.dart';
 import '../../../core/app_colors.dart';
 import '../home/home_screen.dart';
 
@@ -640,6 +641,13 @@ class _MainBottomNavState extends State<MainBottomNav> {
     setState(() {
       _selectedIndex = index;
     });
+    
+    // Silent refresh logic: 
+    // If user taps on the Browse tab (index 1), refresh data in background
+    if (index == 1) {
+      final browseController = Get.find<BrowseController>();
+      browseController.fetchCategories(showLoading: false);
+    }
   }
 
   @override

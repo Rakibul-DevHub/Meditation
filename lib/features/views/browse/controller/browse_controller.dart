@@ -26,9 +26,12 @@ class BrowseController extends GetxController {
   }
 
   // Fetch all categories
-  Future<void> fetchCategories() async {
-    isCategoriesLoading.value = true;
-    categoriesError.value = '';
+  // Added showLoading parameter for "silent refresh" support
+  Future<void> fetchCategories({bool showLoading = true}) async {
+    if (showLoading) {
+      isCategoriesLoading.value = true;
+      categoriesError.value = '';
+    }
 
     try {
       final NetworkResponseDio response = await _networkCaller.getRequest(AppUrl.categories);
@@ -37,14 +40,20 @@ class BrowseController extends GetxController {
         final categoryResponse = CategoryListResponse.fromJson(response.jsonResponse!);
         categories.value = categoryResponse.data?.results ?? [];
         filteredCategories.value = categories;
+        categoriesError.value = ''; // Clear error if success
       } else {
-        categoriesError.value = response.errorMessage ?? 'Failed to load categories';
+        // Only show error if we don't already have data (prevents clearing screen on background fail)
+        if (categories.isEmpty) {
+          categoriesError.value = response.errorMessage ?? 'Failed to load categories';
+        }
       }
     } catch (e) {
-      categoriesError.value = 'An unexpected error occurred';
+      if (categories.isEmpty) {
+        categoriesError.value = 'An unexpected error occurred';
+      }
       debugPrint('Error fetching categories: $e');
     } finally {
-      isCategoriesLoading.value = false;
+      if (showLoading) isCategoriesLoading.value = false;
     }
   }
 
@@ -60,10 +69,11 @@ class BrowseController extends GetxController {
   }
 
   // Fetch tracks for a specific category
-  Future<void> fetchCategoryDetails(String categoryId) async {
-    isDetailsLoading.value = true;
-    detailsError.value = '';
-    selectedCategory.value = null;
+  Future<void> fetchCategoryDetails(String categoryId, {bool showLoading = true}) async {
+    if (showLoading) {
+      isDetailsLoading.value = true;
+      detailsError.value = '';
+    }
 
     try {
       final NetworkResponseDio response = await _networkCaller.getRequest(
@@ -73,14 +83,19 @@ class BrowseController extends GetxController {
       if (response.isSuccess && response.jsonResponse != null) {
         final detailResponse = CategoryDetailResponse.fromJson(response.jsonResponse!);
         selectedCategory.value = detailResponse.data;
+        detailsError.value = '';
       } else {
-        detailsError.value = response.errorMessage ?? 'Failed to load tracks';
+        if (selectedCategory.value == null) {
+          detailsError.value = response.errorMessage ?? 'Failed to load tracks';
+        }
       }
     } catch (e) {
-      detailsError.value = 'An unexpected error occurred';
+      if (selectedCategory.value == null) {
+        detailsError.value = 'An unexpected error occurred';
+      }
       debugPrint('Error fetching category details: $e');
     } finally {
-      isDetailsLoading.value = false;
+      if (showLoading) isDetailsLoading.value = false;
     }
   }
 }
