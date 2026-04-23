@@ -1,3 +1,4 @@
+/**
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -42,6 +43,98 @@ class SecureStorageService {
     final data = await _storage.read(key: _keyUserData);
     if (data == null) return null;
     return jsonDecode(data);
+  }
+
+  Future<void> clearAll() async {
+    await _storage.deleteAll();
+  }
+}*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+class SecureStorageService {
+  static final SecureStorageService _instance = SecureStorageService._internal();
+  static SecureStorageService get instance => _instance;
+  SecureStorageService._internal();
+
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+    ),
+  );
+
+  final String _keyAccessToken  = 'ACCESS_TOKEN';
+  final String _keyRefreshToken = 'REFRESH_TOKEN';
+  final String _keyUserData     = 'USER_DATA';
+
+  Future<void> saveAccessToken(String token) async {
+    await _storage.write(key: _keyAccessToken, value: token);
+  }
+
+  Future<String?> getAccessToken() async {
+    final token = await _storage.read(key: _keyAccessToken);
+    return (token != null && token.isNotEmpty) ? token : null;
+  }
+
+  Future<void> saveRefreshToken(String token) async {
+    await _storage.write(key: _keyRefreshToken, value: token);
+  }
+
+  Future<String?> getRefreshToken() async {
+    final token = await _storage.read(key: _keyRefreshToken);
+    return (token != null && token.isNotEmpty) ? token : null;
+  }
+
+  Future<void> saveUserData(Map<String, dynamic> user) async {
+    await _storage.write(key: _keyUserData, value: jsonEncode(user));
+  }
+
+  Future<Map<String, dynamic>?> getUserData() async {
+    final data = await _storage.read(key: _keyUserData);
+    if (data == null || data.isEmpty) return null;
+    try {
+      return jsonDecode(data) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> clearAll() async {

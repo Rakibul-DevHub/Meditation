@@ -1,3 +1,4 @@
+/**
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/network/app_url.dart';
@@ -216,6 +217,241 @@ class SignInScreenController extends GetxController {
   }
 
   // Social login methods
+  Future<void> continueWithGoogle() async {
+    Get.snackbar(
+      'Info',
+      'Google sign-in coming soon',
+      snackPosition: SnackPosition.TOP,
+    );
+  }
+
+  Future<void> continueWithApple() async {
+    Get.snackbar(
+      'Info',
+      'Apple sign-in coming soon',
+      snackPosition: SnackPosition.TOP,
+    );
+  }
+}*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../../../core/network/app_url.dart';
+import '../../../../core/network/network_caller_dio.dart';
+import '../../../../core/network/network_response_dio.dart';
+import '../../../../core/network/secure_storage_service.dart';
+import '../../../../model/login_request_model.dart';
+import '../../../../model/login_response_model.dart';
+import '../../../views/bottom_nav/main_bottom_nav.dart';
+
+class SignInScreenController extends GetxController {
+  final NetworkCallerDio _networkCaller = NetworkCallerDio();
+
+  final RxBool isLoading = false.obs;
+  final RxBool isPasswordVisible = false.obs;
+
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  final RxString emailError = ''.obs;
+  final RxString passwordError = ''.obs;
+  final RxString generalErrorMessage = ''.obs;
+
+  @override
+  void onClose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.onClose();
+  }
+
+  void togglePasswordVisibility() {
+    isPasswordVisible.value = !isPasswordVisible.value;
+  }
+
+  bool validateForm() {
+    bool isValid = true;
+
+    emailError.value = '';
+    passwordError.value = '';
+    generalErrorMessage.value = '';
+
+    if (emailController.text.trim().isEmpty) {
+      emailError.value = 'Email is required';
+      isValid = false;
+    } else if (!GetUtils.isEmail(emailController.text.trim())) {
+      emailError.value = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    if (passwordController.text.isEmpty) {
+      passwordError.value = 'Password is required';
+      isValid = false;
+    } else if (passwordController.text.length < 6) {
+      passwordError.value = 'Password must be at least 6 characters';
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  Future<void> loginUser() async {
+    if (!validateForm()) return;
+
+    isLoading.value = true;
+    generalErrorMessage.value = '';
+
+    try {
+      final LoginRequestModel request = LoginRequestModel(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
+
+      debugPrint('🚀 POST: ${AppUrl.login}');
+      debugPrint('📧 Email: ${request.email}');
+
+      final NetworkResponseDio response = await _networkCaller.postRequest(
+        AppUrl.login,
+        body: request.toJson(),
+        isLogin: true,
+      );
+
+      debugPrint('📡 Status: ${response.statusCode}');
+      debugPrint('📡 Success: ${response.isSuccess}');
+      debugPrint('📡 Data: ${response.jsonResponse}');
+
+      if (response.isSuccess &&
+          (response.statusCode == 200 || response.statusCode == 201)) {
+        if (response.jsonResponse != null) {
+          final LoginResponseModel loginResponse =
+          LoginResponseModel.fromJson(response.jsonResponse!);
+
+          // ✅ Save token using SecureStorageService
+          if (loginResponse.token != null && loginResponse.token!.isNotEmpty) {
+            await SecureStorageService.instance
+                .saveAccessToken(loginResponse.token!);
+            debugPrint('🔑 Token saved: ${loginResponse.token}');
+
+            // ✅ Verify token was saved correctly
+            final savedToken =
+            await SecureStorageService.instance.getAccessToken();
+            debugPrint(
+                '✅ Token verified: ${savedToken != null ? "OK (${savedToken.length} chars)" : "FAILED"}');
+          } else {
+            debugPrint('⚠️ Token is null or empty in response');
+            generalErrorMessage.value =
+            'Login succeeded but no token received. Please try again.';
+            isLoading.value = false;
+            return;
+          }
+
+          // ✅ Save user data using SecureStorageService
+          if (loginResponse.data != null) {
+            await SecureStorageService.instance
+                .saveUserData(loginResponse.data!.toJson());
+            debugPrint('👤 User data saved: ${loginResponse.data!.email}');
+          }
+
+          Get.snackbar(
+            'Success',
+            loginResponse.message ?? 'Login successful!',
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.TOP,
+            duration: const Duration(seconds: 2),
+          );
+
+          Get.offAll(() => const MainBottomNav());
+        } else {
+          // Success but no body — navigate anyway
+          Get.snackbar(
+            'Success',
+            'Login successful!',
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.TOP,
+          );
+          Get.offAll(() => const MainBottomNav());
+        }
+      } else {
+        String errorMsg =
+            response.errorMessage ?? 'Login failed. Please check your credentials.';
+
+        if (response.jsonResponse != null) {
+          if (response.jsonResponse!.containsKey('message')) {
+            errorMsg = response.jsonResponse!['message'].toString();
+          } else if (response.jsonResponse!.containsKey('error')) {
+            errorMsg = response.jsonResponse!['error'].toString();
+          }
+        }
+
+        generalErrorMessage.value = errorMsg;
+
+        Get.snackbar(
+          'Login Failed',
+          errorMsg,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 4),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Login error: $e');
+      generalErrorMessage.value =
+      'An unexpected error occurred. Please try again.';
+      Get.snackbar(
+        'Error',
+        'An unexpected error occurred. Please try again.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void clearForm() {
+    emailController.clear();
+    passwordController.clear();
+    emailError.value = '';
+    passwordError.value = '';
+    generalErrorMessage.value = '';
+  }
+
   Future<void> continueWithGoogle() async {
     Get.snackbar(
       'Info',

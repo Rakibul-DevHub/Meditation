@@ -13,5 +13,7 @@ class AppUrl {
   static String categoryDetails(String id) => '$baseUrl/app/categories/$id';
   static String trackDetails(String id) => '$baseUrl/app/tracks/$id';
   static const String playHistory = '$baseUrl/app/play-history';
+  static const String getFavorites = '$baseUrl/app/favourites';
+  static String addFavorites (String id) => '$baseUrl/app/favourites/$id';
 
 }

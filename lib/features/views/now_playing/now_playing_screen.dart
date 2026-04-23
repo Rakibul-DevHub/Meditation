@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/app_colors.dart';
+import '../../../core/network/app_url.dart';
+import '../../../core/network/network_caller_dio.dart';
+import '../../../core/network/secure_storage_service.dart';
 import '../../../core/widget/player_controller.dart';
 import '../../../model/category_model.dart';
 
@@ -14,6 +17,8 @@ class NowPlayingScreen extends StatefulWidget {
 
 class _NowPlayingScreenState extends State<NowPlayingScreen> {
   final PlayerController _playerController = Get.find<PlayerController>();
+  // Add this at the top of _NowPlayingScreenState
+  final RxBool isFavorite = false.obs;
   
   String? selectedSleepTimer = "Off";
 
@@ -160,10 +165,104 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                             ),
                           ]),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.favorite_border, color: AppColors.lightGreyColor),
-                      onPressed: () {},
-                    ),
+                    // IconButton(
+                    //   icon: const Icon(Icons.favorite_border, color: AppColors.lightGreyColor),
+                    //   onPressed: () async {
+                    //     final track = _playerController.currentTrack.value;
+                    //     if (track == null) return;
+                    //
+                    //     final token = await SecureStorageService.instance.getAccessToken();
+                    //     if (token == null) {
+                    //       Get.snackbar(
+                    //         'Error',
+                    //         'Please login again.',
+                    //         backgroundColor: Colors.red,
+                    //         colorText: Colors.white,
+                    //         snackPosition: SnackPosition.TOP,
+                    //       );
+                    //       return;
+                    //     }
+                    //
+                    //     final response = await NetworkCallerDio().postRequest(
+                    //       AppUrl.addFavorites(track.id ?? ''),
+                    //       body: {},
+                    //       headers: {'Authorization': 'Bearer $token'},
+                    //     );
+                    //
+                    //     if (response.isSuccess) {
+                    //       Get.snackbar(
+                    //         'Added to Favorites',
+                    //         '${track.title} added to your favorites.',
+                    //         backgroundColor: const Color(0xFF7B61FF),
+                    //         colorText: Colors.white,
+                    //         snackPosition: SnackPosition.TOP,
+                    //         duration: const Duration(seconds: 2),
+                    //       );
+                    //     } else {
+                    //       Get.snackbar(
+                    //         'Failed',
+                    //         response.errorMessage ?? 'Could not add to favorites.',
+                    //         backgroundColor: Colors.red,
+                    //         colorText: Colors.white,
+                    //         snackPosition: SnackPosition.TOP,
+                    //       );
+                    //     }
+                    //   },
+                    // ),
+
+
+
+                    Obx(() => IconButton(
+                      icon: Icon(
+                        isFavorite.value ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite.value ? const Color(0xFF7B61FF) : AppColors.lightGreyColor,
+                      ),
+                      onPressed: () async {
+                        final track = _playerController.currentTrack.value;
+                        if (track == null) return;
+
+                        final token = await SecureStorageService.instance.getAccessToken();
+                        if (token == null) {
+                          Get.snackbar(
+                            'Error',
+                            'Please login again.',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                          return;
+                        }
+
+                        final response = await NetworkCallerDio().postRequest(
+                          AppUrl.addFavorites(track.id ?? ''),
+                          body: {},
+                          headers: {'Authorization': 'Bearer $token'},
+                        );
+
+                        if (response.isSuccess) {
+                          isFavorite.value = true;  // ✅ fill the icon on success
+                          Get.snackbar(
+                            'Added to Favorites',
+                            '${track.title} added to your favorites.',
+                            backgroundColor: const Color(0xFF7B61FF),
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                            duration: const Duration(seconds: 2),
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Failed',
+                            response.errorMessage ?? 'Could not add to favorites.',
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                        }
+                      },
+                    )),
+
+
+
                     IconButton(
                       icon: const Icon(Icons.cloud_download_outlined, color: AppColors.lightGreyColor),
                       onPressed: () {},

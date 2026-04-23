@@ -96,6 +96,7 @@ class CategoryModel {
 }
 
 class TrackModel {
+  bool? isFavorite;
   final String? id;
   final String? categoryId;
   final String? title;
@@ -114,6 +115,7 @@ class TrackModel {
   final int? playedSeconds;
 
   TrackModel({
+    this.isFavorite,
     this.id,
     this.categoryId,
     this.title,
@@ -135,6 +137,7 @@ class TrackModel {
   factory TrackModel.fromJson(Map<String, dynamic> json) {
     return TrackModel(
       id: json['id'],
+      isFavorite: json['is_favorite'],
       categoryId: json['categoryId'],
       title: json['title'],
       description: json['description'],
