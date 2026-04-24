@@ -383,26 +383,8 @@ class SignInScreenController extends GetxController {
                 .saveUserData(loginResponse.data!.toJson());
             debugPrint('👤 User data saved: ${loginResponse.data!.email}');
           }
-
-          Get.snackbar(
-            'Success',
-            loginResponse.message ?? 'Login successful!',
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.TOP,
-            duration: const Duration(seconds: 2),
-          );
-
           Get.offAll(() => const MainBottomNav());
         } else {
-          // Success but no body — navigate anyway
-          Get.snackbar(
-            'Success',
-            'Login successful!',
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.TOP,
-          );
           Get.offAll(() => const MainBottomNav());
         }
       } else {

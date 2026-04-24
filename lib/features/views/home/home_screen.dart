@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-// import 'package:outdoor_therapy/core/services/player_service.dart';
-
+import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/widget/player_service.dart';
+import '../../../model/category_model.dart';
+import 'home_screen_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,57 +26,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final String greeting = HomeScreen._getGreeting();
   final PlayerService _playerService = PlayerService();
+  final HomeScreenController _controller = Get.put(HomeScreenController());
 
-  // Featured Sounds - Horizontal Scroll (8 items)
-  final List<Map<String, String>> featuredSounds = [
-    {"title": "Gentle Rain", "image": "assets/images/dummy_image.jpg", "duration": "60:00", "category": "Nature"},
-    {"title": "Ocean Waves", "image": "assets/images/dummy_image2.jpg", "duration": "45:00", "category": "Nature"},
-    {"title": "Forest Night", "image": "assets/images/dummy_image3.jpg", "duration": "60:00", "category": "Nature"},
-    {"title": "Mountain Stream", "image": "assets/images/dummy_image.jpg", "duration": "50:00", "category": "Nature"},
-    {"title": "Thunder Storm", "image": "assets/images/dummy_image2.jpg", "duration": "90:00", "category": "Nature"},
-    {"title": "Birds Chirping", "image": "assets/images/dummy_image3.jpg", "duration": "40:00", "category": "Nature"},
-    {"title": "White Noise", "image": "assets/images/dummy_image.jpg", "duration": "120:00", "category": "Ambient"},
-    {"title": "Campfire", "image": "assets/images/dummy_image2.jpg", "duration": "60:00", "category": "Nature"},
-  ];
-
-  // Sleep Tonight - Horizontal Scroll (8 items)
-  final List<Map<String, String>> sleepTonight = [
-    {"title": "Deep Sleep", "image": "assets/images/dummy_image.jpg", "duration": "8:00:00", "category": "Sleep"},
-    {"title": "Lucid Dreaming", "image": "assets/images/dummy_image2.jpg", "duration": "6:00:00", "category": "Sleep"},
-    {"title": "Sleep Meditation", "image": "assets/images/dummy_image3.jpg", "duration": "45:00", "category": "Meditation"},
-    {"title": "Night Rain", "image": "assets/images/dummy_image.jpg", "duration": "8:00:00", "category": "Sleep"},
-    {"title": "Calm Piano", "image": "assets/images/dummy_image2.jpg", "duration": "7:00:00", "category": "Music"},
-    {"title": "Tibetan Bowls", "image": "assets/images/dummy_image3.jpg", "duration": "5:00:00", "category": "Meditation"},
-    {"title": "Breathing Exercise", "image": "assets/images/dummy_image.jpg", "duration": "30:00", "category": "Wellness"},
-    {"title": "Body Scan", "image": "assets/images/dummy_image2.jpg", "duration": "40:00", "category": "Meditation"},
-  ];
-
-  // Popular Listening - Vertical Scroll (10 items)
-  final List<Map<String, String>> popularListening = [
-    {"title": "Morning Meditation", "image": "assets/images/dummy_image.jpg", "duration": "20:00", "category": "Meditation"},
-    {"title": "Focus Music", "image": "assets/images/dummy_image2.jpg", "duration": "120:00", "category": "Focus"},
-    {"title": "Anxiety Relief", "image": "assets/images/dummy_image3.jpg", "duration": "30:00", "category": "Therapy"},
-    {"title": "Yoga Flow", "image": "assets/images/dummy_image.jpg", "duration": "45:00", "category": "Yoga"},
-    {"title": "Study Beats", "image": "assets/images/dummy_image2.jpg", "duration": "180:00", "category": "Study"},
-    {"title": "Stress Relief", "image": "assets/images/dummy_image3.jpg", "duration": "25:00", "category": "Therapy"},
-    {"title": "Power Nap", "image": "assets/images/dummy_image.jpg", "duration": "20:00", "category": "Sleep"},
-    {"title": "Mindfulness", "image": "assets/images/dummy_image2.jpg", "duration": "15:00", "category": "Meditation"},
-    {"title": "Nature Sounds", "image": "assets/images/dummy_image3.jpg", "duration": "90:00", "category": "Nature"},
-    {"title": "Sleep Stories", "image": "assets/images/dummy_image.jpg", "duration": "45:00", "category": "Sleep"},
-  ];
-
-  void _playTrack(Map<String, String> track) {
-    // Create a track map with the required format
+  void _playTrack(TrackModel track) {
     final trackData = {
-      'title': track['title'] ?? 'Unknown Track',
-      'subtitle': track['category'] ?? 'Meditation',
-      'image': track['image'] ?? 'assets/gif/playing.gif',
-      'duration': track['duration'] ?? '2:25',
-      'description': 'Now playing ${track['title']}',
-      'category': track['category'] ?? 'meditation',
+      'id': track.id,
+      'title': track.title ?? 'Unknown Track',
+      'subtitle': _controller.getCategoryName(track),
+      'image': track.coverImageUrl ?? '',
+      'duration': _controller.formatDuration(track.durationSeconds),
+      'description': 'Now playing ${track.title}',
+      'category': _controller.getCategoryName(track),
+      'audioUrl': track.audioUrl ?? '',
+      'coverImageUrl': track.coverImageUrl ?? '',
     };
 
-    // Use the PlayerService to play the track
     _playerService.playTrack(trackData);
   }
 
@@ -83,190 +49,364 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
+        child: RefreshIndicator(
+          onRefresh: _controller.refreshAllData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
 
-              /// Greeting
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    greeting,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                /// Greeting
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      greeting,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xff101828),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xff364153)),
-                    ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.watch_later_outlined, size: 16, color: Colors.white70),
-                        SizedBox(width: 6),
-                        Text("Sleep", style: TextStyle(color: Colors.white70)),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-
-              const SizedBox(height: 6),
-
-              const Text(
-                "Time to unwind and relax",
-                style: TextStyle(color: Color(0xff9AA4B2)),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// Featured Sounds - Horizontal Scroll
-              const SectionHeader(title: "Featured Sounds"),
-              const SizedBox(height: 16),
-
-              SizedBox(
-                height: 180,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: featuredSounds.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 14),
-                  itemBuilder: (context, index) {
-                    final item = featuredSounds[index];
-                    return GestureDetector(
-                      onTap: () => _playTrack(item),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              image: DecorationImage(
-                                image: AssetImage(item["image"]!),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            item["title"]!,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          Text(
-                            item["duration"]!,
-                            style: const TextStyle(
-                              color: Color(0xff9AA4B2),
-                              fontSize: 12,
-                            ),
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xff101828),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xff364153)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.watch_later_outlined, size: 16, color: Colors.white70),
+                          SizedBox(width: 6),
+                          Text("Sleep", style: TextStyle(color: Colors.white70)),
                         ],
                       ),
-                    );
-                  },
+                    )
+                  ],
                 ),
-              ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 6),
 
-              /// Sleep Tonight - Horizontal Scroll
-              const SectionHeader(title: "Sleep Tonight"),
-              const SizedBox(height: 16),
+                const Text(
+                  "Time to unwind and relax",
+                  style: TextStyle(color: Color(0xff9AA4B2)),
+                ),
 
-              SizedBox(
-                height: 180,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: sleepTonight.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 14),
-                  itemBuilder: (context, index) {
-                    final item = sleepTonight[index];
-                    return GestureDetector(
-                      onTap: () => _playTrack(item),
-                      child: SleepCard(
-                        title: item["title"]!,
-                        duration: item["duration"]!,
-                        image: item["image"]!,
-                        width: 110,
-                        height: 110,
+                const SizedBox(height: 30),
+
+                /// Featured Sounds - Horizontal Scroll
+                const SectionHeader(title: "Featured Sounds"),
+                const SizedBox(height: 16),
+
+                Obx(() {
+                  if (_controller.isLoadingFeatured.value && _controller.featuredTracks.isEmpty) {
+                    return SizedBox(
+                      height: 180,
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
+                        ),
                       ),
                     );
-                  },
-                ),
-              ),
+                  }
 
-              const SizedBox(height: 30),
-
-              /// Popular Listening - Vertical Scroll
-              const SectionHeader(title: "Popular Listening"),
-              const SizedBox(height: 16),
-
-              // Vertical ListView with proper scrolling
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: popularListening.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final item = popularListening[index];
-                  return GestureDetector(
-                    onTap: () => _playTrack(item),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 55,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            image: DecorationImage(
-                              image: AssetImage(item["image"]!),
-                              fit: BoxFit.cover,
+                  if (_controller.featuredError.isNotEmpty && _controller.featuredTracks.isEmpty) {
+                    return SizedBox(
+                      height: 180,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _controller.featuredError.value,
+                              style: const TextStyle(color: Colors.white70),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () => _controller.fetchFeaturedSounds(),
+                              child: const Text('Retry', style: TextStyle(color: Color(0xFF6C5ECF))),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
+                      ),
+                    );
+                  }
+
+                  if (_controller.featuredTracks.isEmpty) {
+                    return SizedBox(
+                      height: 180,
+                      child: const Center(
+                        child: Text(
+                          'No featured sounds available',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return SizedBox(
+                    height: 180,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _controller.featuredTracks.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final track = _controller.featuredTracks[index];
+                        return GestureDetector(
+                          onTap: () => _playTrack(track),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                item["title"]!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
+                              Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: CachedNetworkImage(
+                                    imageUrl: track.coverImageUrl ?? '',
+                                    fit: BoxFit.cover,
+                                    placeholder: (_, __) => Container(
+                                      color: Colors.grey[800],
+                                      child: const Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                    errorWidget: (_, __, ___) => Container(
+                                      color: Colors.grey[800],
+                                      child: const Icon(Icons.music_note, color: Colors.white54),
+                                    ),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  track.title ?? 'Unknown',
+                                  style: const TextStyle(color: Colors.white),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                               Text(
-                                "${item["category"]} • ${item["duration"]}",
+                                _controller.formatDuration(track.durationSeconds),
                                 style: const TextStyle(
                                   color: Color(0xff9AA4B2),
                                   fontSize: 12,
                                 ),
-                              )
+                              ),
                             ],
                           ),
-                        ),
-                        const Icon(Icons.play_arrow, color: Colors.white70),
-                        const SizedBox(width: 12),
-                        const Icon(Icons.favorite_border, color: Colors.white70),
-                      ],
+                        );
+                      },
                     ),
                   );
-                },
-              ),
+                }),
 
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 30),
+
+                /// Sleep Tonight - Horizontal Scroll
+                const SectionHeader(title: "Sleep Tonight"),
+                const SizedBox(height: 16),
+
+                Obx(() {
+                  if (_controller.isLoadingSleep.value && _controller.sleepTonightTracks.isEmpty) {
+                    return SizedBox(
+                      height: 180,
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (_controller.sleepError.isNotEmpty && _controller.sleepTonightTracks.isEmpty) {
+                    return SizedBox(
+                      height: 180,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _controller.sleepError.value,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () => _controller.fetchSleepTonight(),
+                              child: const Text('Retry', style: TextStyle(color: Color(0xFF6C5ECF))),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (_controller.sleepTonightTracks.isEmpty) {
+                    return SizedBox(
+                      height: 180,
+                      child: const Center(
+                        child: Text(
+                          'No sleep sounds available',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return SizedBox(
+                    height: 180,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _controller.sleepTonightTracks.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final track = _controller.sleepTonightTracks[index];
+                        return GestureDetector(
+                          onTap: () => _playTrack(track),
+                          child: SleepCard(
+                            title: track.title ?? 'Unknown',
+                            duration: _controller.formatDuration(track.durationSeconds),
+                            image: track.coverImageUrl ?? '',
+                            width: 110,
+                            height: 110,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }),
+
+                const SizedBox(height: 30),
+
+                /// Popular Listening - Vertical Scroll
+                const SectionHeader(title: "Popular Listening"),
+                const SizedBox(height: 16),
+
+                Obx(() {
+                  if (_controller.isLoadingPopular.value && _controller.popularTracks.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (_controller.popularError.isNotEmpty && _controller.popularTracks.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _controller.popularError.value,
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () => _controller.fetchPopularSounds(),
+                            child: const Text('Retry', style: TextStyle(color: Color(0xFF6C5ECF))),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (_controller.popularTracks.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Text(
+                          'No popular tracks available',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _controller.popularTracks.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final track = _controller.popularTracks[index];
+                      return GestureDetector(
+                        onTap: () => _playTrack(track),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 55,
+                              height: 55,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: CachedNetworkImage(
+                                  imageUrl: track.coverImageUrl ?? '',
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(
+                                    color: Colors.grey[800],
+                                    child: const Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  ),
+                                  errorWidget: (_, __, ___) => Container(
+                                    color: Colors.grey[800],
+                                    child: const Icon(Icons.music_note, color: Colors.white54),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    track.title ?? 'Unknown Track',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    "${_controller.getCategoryName(track)} • ${_controller.formatDuration(track.durationSeconds)}",
+                                    style: const TextStyle(
+                                      color: Color(0xff9AA4B2),
+                                      fontSize: 12,
+                                    ),
+                                  )
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.play_arrow, color: Colors.white70),
+                            const SizedBox(width: 12),
+                            const Icon(Icons.favorite_border, color: Colors.white70),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }),
+
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
@@ -320,9 +460,22 @@ class SleepCard extends StatelessWidget {
             width: width,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              image: DecorationImage(
-                image: AssetImage(image),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: CachedNetworkImage(
+                imageUrl: image,
                 fit: BoxFit.cover,
+                placeholder: (_, __) => Container(
+                  color: Colors.grey[800],
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  color: Colors.grey[800],
+                  child: const Icon(Icons.music_note, color: Colors.white54),
+                ),
               ),
             ),
           ),
@@ -333,6 +486,8 @@ class SleepCard extends StatelessWidget {
               color: Colors.white,
               fontSize: 14,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           Text(
             duration,
@@ -346,6 +501,3 @@ class SleepCard extends StatelessWidget {
     );
   }
 }
-
-
-
