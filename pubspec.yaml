@@ -41,6 +41,7 @@ dependencies:
   dio: ^5.9.2
   cached_network_image: ^3.4.1
   just_audio: ^0.10.5
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

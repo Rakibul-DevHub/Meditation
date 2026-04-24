@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import '../../../core/app_colors.dart';
 import '../../../core/widget/player_service.dart';
 import '../../../model/category_model.dart';
 import 'home_screen_controller.dart';
@@ -78,11 +80,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: const Color(0xff364153)),
                       ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.watch_later_outlined, size: 16, color: Colors.white70),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.watch_later_outlined, size: 16, color: AppColors.whiteColor70),
                           SizedBox(width: 6),
-                          Text("Sleep", style: TextStyle(color: Colors.white70)),
+                          Text("Sleep", style: TextStyle(color: AppColors.whiteColor70)),
                         ],
                       ),
                     )
@@ -103,15 +105,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 Obx(() {
-                  if (_controller.isLoadingFeatured.value && _controller.featuredTracks.isEmpty) {
-                    return SizedBox(
-                      height: 180,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
-                        ),
-                      ),
-                    );
+                  // Show shimmer during initial load OR during refresh
+                  final shouldShowShimmer = (_controller.isLoadingFeatured.value && _controller.featuredTracks.isEmpty) ||
+                      _controller.isRefreshingFeatured.value;
+
+                  if (shouldShowShimmer) {
+                    return _buildFeaturedShimmer();
                   }
 
                   if (_controller.featuredError.isNotEmpty && _controller.featuredTracks.isEmpty) {
@@ -123,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               _controller.featuredError.value,
-                              style: const TextStyle(color: Colors.white70),
+                              style: const TextStyle(color: AppColors.whiteColor70),
                             ),
                             const SizedBox(height: 8),
                             TextButton(
@@ -173,13 +172,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     imageUrl: track.coverImageUrl ?? '',
                                     fit: BoxFit.cover,
                                     placeholder: (_, __) => Container(
-                                      color: Colors.grey[800],
+                                      color: AppColors.grey800,
                                       child: const Center(
                                         child: CircularProgressIndicator(strokeWidth: 2),
                                       ),
                                     ),
                                     errorWidget: (_, __, ___) => Container(
-                                      color: Colors.grey[800],
+                                      color: AppColors.grey800,
                                       child: const Icon(Icons.music_note, color: Colors.white54),
                                     ),
                                   ),
@@ -217,15 +216,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 Obx(() {
-                  if (_controller.isLoadingSleep.value && _controller.sleepTonightTracks.isEmpty) {
-                    return SizedBox(
-                      height: 180,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
-                        ),
-                      ),
-                    );
+                  final shouldShowShimmer = (_controller.isLoadingSleep.value && _controller.sleepTonightTracks.isEmpty) ||
+                      _controller.isRefreshingSleep.value;
+
+                  if (shouldShowShimmer) {
+                    return _buildSleepShimmer();
                   }
 
                   if (_controller.sleepError.isNotEmpty && _controller.sleepTonightTracks.isEmpty) {
@@ -237,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               _controller.sleepError.value,
-                              style: const TextStyle(color: Colors.white70),
+                              style: const TextStyle(color: AppColors.whiteColor70),
                             ),
                             const SizedBox(height: 8),
                             TextButton(
@@ -292,15 +287,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 Obx(() {
-                  if (_controller.isLoadingPopular.value && _controller.popularTracks.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
-                        ),
-                      ),
-                    );
+                  final shouldShowShimmer = (_controller.isLoadingPopular.value && _controller.popularTracks.isEmpty) ||
+                      _controller.isRefreshingPopular.value;
+
+                  if (shouldShowShimmer) {
+                    return _buildPopularShimmer();
                   }
 
                   if (_controller.popularError.isNotEmpty && _controller.popularTracks.isEmpty) {
@@ -310,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Text(
                             _controller.popularError.value,
-                            style: const TextStyle(color: Colors.white70),
+                            style: const TextStyle(color: AppColors.whiteColor70),
                           ),
                           const SizedBox(height: 8),
                           TextButton(
@@ -357,13 +348,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   imageUrl: track.coverImageUrl ?? '',
                                   fit: BoxFit.cover,
                                   placeholder: (_, __) => Container(
-                                    color: Colors.grey[800],
+                                    color: AppColors.grey800,
                                     child: const Center(
                                       child: CircularProgressIndicator(strokeWidth: 2),
                                     ),
                                   ),
                                   errorWidget: (_, __, ___) => Container(
-                                    color: Colors.grey[800],
+                                    color: AppColors.grey800,
                                     child: const Icon(Icons.music_note, color: Colors.white54),
                                   ),
                                 ),
@@ -394,9 +385,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                             ),
-                            const Icon(Icons.play_arrow, color: Colors.white70),
+                            const Icon(Icons.play_arrow_rounded, color: AppColors.whiteColor70,size: 30,),
                             const SizedBox(width: 12),
-                            const Icon(Icons.favorite_border, color: Colors.white70),
+                            const Icon(Icons.favorite_border, color: AppColors.whiteColor70),
                           ],
                         ),
                       );
@@ -405,6 +396,153 @@ class _HomeScreenState extends State<HomeScreen> {
                 }),
 
                 const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Shimmer for Featured Sounds section
+  Widget _buildFeaturedShimmer() {
+    return SizedBox(
+      height: 180,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: 5,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: AppColors.grey850!,
+            highlightColor: AppColors.grey800!,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppColors.grey800,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 100,
+                  height: 14,
+                  color: AppColors.grey800,
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 60,
+                  height: 12,
+                  color: AppColors.grey800,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Shimmer for Sleep Tonight section
+  Widget _buildSleepShimmer() {
+    return SizedBox(
+      height: 180,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: 5,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: AppColors.grey850!,
+            highlightColor: AppColors.grey800!,
+            child: SizedBox(
+              width: 110,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 110,
+                    width: 110,
+                    decoration: BoxDecoration(
+                      color: AppColors.grey800,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 90,
+                    height: 14,
+                    color: AppColors.grey800,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: 50,
+                    height: 12,
+                    color: AppColors.grey800,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Shimmer for Popular Listening section
+  Widget _buildPopularShimmer() {
+    return Column(
+      children: List.generate(
+        5,
+            (index) => Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Shimmer.fromColors(
+            baseColor: AppColors.grey850!,
+            highlightColor: AppColors.grey800!,
+            child: Row(
+              children: [
+                Container(
+                  width: 55,
+                  height: 55,
+                  decoration: BoxDecoration(
+                    color: AppColors.grey800,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 16,
+                        color: AppColors.grey800,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 120,
+                        height: 12,
+                        color: AppColors.grey800,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 24,
+                  height: 24,
+                  color: AppColors.grey800,
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 24,
+                  height: 24,
+                  color: AppColors.grey800,
+                ),
               ],
             ),
           ),
@@ -467,13 +605,13 @@ class SleepCard extends StatelessWidget {
                 imageUrl: image,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => Container(
-                  color: Colors.grey[800],
+                  color: AppColors.grey800,
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  color: Colors.grey[800],
+                  color: AppColors.grey800,
                   child: const Icon(Icons.music_note, color: Colors.white54),
                 ),
               ),

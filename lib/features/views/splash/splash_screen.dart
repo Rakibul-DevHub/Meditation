@@ -1,3 +1,4 @@
+/**
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -106,6 +107,108 @@ class _SplashScreenState extends State<SplashScreen>
             ),
 
             /// TEXT
+            SlideTransition(
+              position: _textAnimation,
+              child: Text(
+                "Outdoor Therapy",
+                style: TextStyle(
+                  color: AppColors.primaryColor,
+                  fontSize: 50,
+                  fontFamily: 'Allison-Regular',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}*/
+
+
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
+import 'package:outdoor_therapy/core/app_colors.dart';
+
+import 'splash_controller.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _iconAnimation;
+  late Animation<Offset> _textAnimation;
+
+  final SplashController splashController = Get.put(SplashController());
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _iconAnimation = Tween<Offset>(
+      begin: const Offset(-1.5, 0),
+      end: const Offset(0, 0),
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _textAnimation = Tween<Offset>(
+      begin: const Offset(1.5, 0),
+      end: const Offset(0, 0),
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _controller.forward();
+
+    /// 🔥 navigation handled by controller
+    splashController.handleNavigation();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backGroundColor,
+      body: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SlideTransition(
+              position: _iconAnimation,
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/icons/logoIcon.svg',
+                    width: 50,
+                  ),
+                  const SizedBox(width: 12),
+                ],
+              ),
+            ),
+
             SlideTransition(
               position: _textAnimation,
               child: Text(
