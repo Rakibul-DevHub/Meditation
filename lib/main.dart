@@ -1,18 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
-import 'package:outdoor_therapy/features/views/auth/sign_in_screen.dart';
-import 'package:outdoor_therapy/features/views/auth/sign_up_screen.dart';
-import 'package:outdoor_therapy/features/views/auth/verify_code_screen.dart';
-import 'package:outdoor_therapy/features/views/bottom_nav/main_bottom_nav.dart';
-import 'package:outdoor_therapy/features/views/home/home_screen.dart';
-import 'package:outdoor_therapy/features/views/now_playing/now_playing_screen.dart';
 import 'package:outdoor_therapy/features/views/splash/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-import 'features/views/onboard/onboard_screen.dart';
-
-void main() {
+Future<void> main() async {
   runApp(const MyApp());
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 }
 
 class MyApp extends StatelessWidget {

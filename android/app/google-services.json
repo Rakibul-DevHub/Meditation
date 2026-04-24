@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "118678777351",
+    "project_id": "outdoor-therapy-6e7be",
+    "storage_bucket": "outdoor-therapy-6e7be.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:118678777351:android:b242beb02c8a71d73384a2",
+        "android_client_info": {
+          "package_name": "com.example.outdoor_therapy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdYTlPEsswe1KwO5zkS9PeIpRNQRnvQI8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

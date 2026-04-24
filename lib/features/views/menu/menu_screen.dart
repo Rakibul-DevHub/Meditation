@@ -858,11 +858,11 @@ class _LogoutButton extends StatelessWidget {
             content: const Text('Are you sure you want to logout?', style: TextStyle(color: Colors.white70)),
             actions: [
               TextButton(
-                onPressed: () => Get.offAll(()=>SignInScreen()),
+                onPressed: () => Get.back(),
                 child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () => Get.offAll(()=>SignInScreen()),
                 child: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
               ),
             ],
