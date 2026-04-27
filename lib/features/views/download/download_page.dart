@@ -1,179 +1,1023 @@
-import 'package:flutter/material.dart';
-import 'package:outdoor_therapy/core/app_colors.dart';
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:cached_network_image/cached_network_image.dart';
+// import 'package:outdoor_therapy/core/app_colors.dart';
+// import 'package:outdoor_therapy/core/widget/player_controller.dart';
+// import '../../../core/download_service.dart';
+// import '../../../model/category_model.dart';
+// import '../../../features/views/now_playing/now_playing_screen.dart';
+// import 'download_controller.dart';
+//
+// class DownloadScreen extends StatelessWidget {
+//   const DownloadScreen({super.key});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final DownloadController controller = Get.put(DownloadController());
+//     final DownloadService downloadService = Get.find<DownloadService>();
+//     final PlayerController playerController = Get.find<PlayerController>();
+//
+//     return Scaffold(
+//       backgroundColor: AppColors.backGroundColor,
+//       body: SafeArea(
+//         child: Obx(() {
+//           // Get active downloads from service
+//           final activeDownloads = downloadService.activeDownloads.values.toList();
+//           final completedDownloadsFromApi = controller.downloadedTracks;
+//
+//           // Combine: show downloading from service + completed from API
+//           final hasActiveDownloads = activeDownloads.isNotEmpty;
+//           final hasCompletedDownloads = completedDownloadsFromApi.isNotEmpty;
+//
+//           // Loading state
+//           if (controller.isLoading.value && completedDownloadsFromApi.isEmpty && activeDownloads.isEmpty) {
+//             return const Center(
+//               child: CircularProgressIndicator(
+//                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+//               ),
+//             );
+//           }
+//
+//           // Error state with RefreshIndicator
+//           if (controller.errorMessage.isNotEmpty && completedDownloadsFromApi.isEmpty && activeDownloads.isEmpty) {
+//             return RefreshIndicator(
+//               onRefresh: () async {
+//                 await controller.refresh();
+//                 downloadService.refreshActiveDownloads();
+//               },
+//               color: const Color(0xFF7B61FF),
+//               backgroundColor: const Color(0xFF151932),
+//               child: SingleChildScrollView(
+//                 physics: const AlwaysScrollableScrollPhysics(),
+//                 child: SizedBox(
+//                   height: MediaQuery.of(context).size.height * 0.7,
+//                   child: Center(
+//                     child: Padding(
+//                       padding: const EdgeInsets.symmetric(horizontal: 32),
+//                       child: Column(
+//                         mainAxisAlignment: MainAxisAlignment.center,
+//                         children: [
+//                           const Icon(Icons.error_outline,
+//                               color: Color(0xFF9AA4B2), size: 48),
+//                           const SizedBox(height: 12),
+//                           Text(
+//                             controller.errorMessage.value,
+//                             textAlign: TextAlign.center,
+//                             style: const TextStyle(
+//                               color: Color(0xFF9AA4B2),
+//                               fontSize: 14,
+//                             ),
+//                           ),
+//                           const SizedBox(height: 20),
+//                           ElevatedButton(
+//                             onPressed: () async {
+//                               await controller.refresh();
+//                               downloadService.refreshActiveDownloads();
+//                             },
+//                             style: ElevatedButton.styleFrom(
+//                               backgroundColor: const Color(0xFF7B61FF),
+//                               shape: RoundedRectangleBorder(
+//                                 borderRadius: BorderRadius.circular(12),
+//                               ),
+//                             ),
+//                             child: const Text('Retry'),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             );
+//           }
+//
+//           // Empty state with RefreshIndicator
+//           if (!hasActiveDownloads && !hasCompletedDownloads) {
+//             return RefreshIndicator(
+//               onRefresh: () async {
+//                 await controller.refresh();
+//                 downloadService.refreshActiveDownloads();
+//               },
+//               color: const Color(0xFF7B61FF),
+//               backgroundColor: const Color(0xFF151932),
+//               child: SingleChildScrollView(
+//                 physics: const AlwaysScrollableScrollPhysics(),
+//                 child: SizedBox(
+//                   height: MediaQuery.of(context).size.height * 0.7,
+//                   child: const Center(
+//                     child: Column(
+//                       mainAxisAlignment: MainAxisAlignment.center,
+//                       children: [
+//                         Icon(
+//                           Icons.cloud_download_outlined,
+//                           size: 64,
+//                           color: Color(0xFF9AA4B2),
+//                         ),
+//                         SizedBox(height: 16),
+//                         Text(
+//                           'No downloads yet',
+//                           style: TextStyle(
+//                             color: Colors.white,
+//                             fontSize: 18,
+//                             fontWeight: FontWeight.w600,
+//                           ),
+//                         ),
+//                         SizedBox(height: 8),
+//                         Text(
+//                           'Download your favorite sounds to listen offline',
+//                           style: TextStyle(
+//                             color: Color(0xFF9AA4B2),
+//                             fontSize: 14,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             );
+//           }
+//
+//           // Downloads list with both active and completed - with RefreshIndicator
+//           return RefreshIndicator(
+//             onRefresh: () async {
+//               await controller.refresh();
+//               downloadService.refreshActiveDownloads();
+//             },
+//             color: const Color(0xFF7B61FF),
+//             backgroundColor: const Color(0xFF151932),
+//             child: CustomScrollView(
+//               physics: const AlwaysScrollableScrollPhysics(),
+//               slivers: [
+//                 // Header
+//                 SliverToBoxAdapter(
+//                   child: Padding(
+//                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         const Text(
+//                           'Downloads',
+//                           style: TextStyle(
+//                             color: Colors.white,
+//                             fontSize: 28,
+//                             fontWeight: FontWeight.w800,
+//                             letterSpacing: -0.5,
+//                           ),
+//                         ),
+//                         const SizedBox(height: 4),
+//                         Text(
+//                           '${completedDownloadsFromApi.length + activeDownloads.length} sounds downloaded',
+//                           style: TextStyle(
+//                             color: Colors.white.withOpacity(0.45),
+//                             fontSize: 14,
+//                           ),
+//                         ),
+//                         const SizedBox(height: 28),
+//                       ],
+//                     ),
+//                   ),
+//                 ),
+//
+//                 // Active Downloads Section (Downloading)
+//                 if (activeDownloads.isNotEmpty) ...[
+//                   const SliverToBoxAdapter(
+//                     child: Padding(
+//                       padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+//                       child: Text(
+//                         'Downloading',
+//                         style: TextStyle(
+//                           color: Colors.white,
+//                           fontSize: 20,
+//                           fontWeight: FontWeight.w700,
+//                           letterSpacing: -0.3,
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                   SliverList(
+//                     delegate: SliverChildBuilderDelegate(
+//                           (context, index) {
+//                         final download = activeDownloads[index];
+//                         return _ActiveDownloadCard(
+//                           downloadState: download,
+//                           onCancel: () async {
+//                             // ✅ Cancel the download using the service
+//                             // Show confirmation dialog before cancelling
+//                             final confirm = await showDialog<bool>(
+//                               context: context,
+//                               barrierDismissible: false,
+//                               builder: (context) => AlertDialog(
+//                                 backgroundColor: const Color(0xFF151932),
+//                                 shape: RoundedRectangleBorder(
+//                                   borderRadius: BorderRadius.circular(16),
+//                                 ),
+//                                 title: const Text(
+//                                   'Cancel Download',
+//                                   style: TextStyle(color: Colors.white),
+//                                 ),
+//                                 content: Text(
+//                                   'Are you sure you want to cancel downloading "${download.trackTitle}"?',
+//                                   style: const TextStyle(color: Colors.white70),
+//                                 ),
+//                                 actions: [
+//                                   TextButton(
+//                                     onPressed: () => Navigator.pop(context, false),
+//                                     child: const Text(
+//                                       'No',
+//                                       style: TextStyle(color: Colors.white54),
+//                                     ),
+//                                   ),
+//                                   TextButton(
+//                                     onPressed: () => Navigator.pop(context, true),
+//                                     child: const Text(
+//                                       'Yes, Cancel',
+//                                       style: TextStyle(color: Colors.redAccent),
+//                                     ),
+//                                   ),
+//                                 ],
+//                               ),
+//                             );
+//
+//                             if (confirm == true) {
+//                               // Cancel the download
+//                               downloadService.cancelDownload(download.trackId);
+//
+//                               Get.snackbar(
+//                                 'Cancelled',
+//                                 '${download.trackTitle} download cancelled',
+//                                 backgroundColor: Colors.orange,
+//                                 colorText: Colors.white,
+//                                 snackPosition: SnackPosition.BOTTOM,
+//                                 duration: const Duration(seconds: 2),
+//                               );
+//                             }
+//                           },
+//                         );
+//                       },
+//                       childCount: activeDownloads.length,
+//                     ),
+//                   ),
+//                   const SliverToBoxAdapter(child: SizedBox(height: 28)),
+//                 ],
+//
+//                 // Completed Downloads Section
+//                 if (completedDownloadsFromApi.isNotEmpty) ...[
+//                   const SliverToBoxAdapter(
+//                     child: Padding(
+//                       padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+//                       child: Text(
+//                         'Downloaded',
+//                         style: TextStyle(
+//                           color: Colors.white,
+//                           fontSize: 20,
+//                           fontWeight: FontWeight.w700,
+//                           letterSpacing: -0.3,
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                   SliverList(
+//                     delegate: SliverChildBuilderDelegate(
+//                           (context, index) {
+//                         final track = completedDownloadsFromApi[index];
+//                         return _CompletedDownloadCard(
+//                           track: track,
+//                           onTap: () async {
+//                             // Play the downloaded track
+//                             final localFilePath = await track.getLocalFilePath();
+//
+//                             if (localFilePath != null) {
+//                               final trackModel = TrackModel(
+//                                 id: track.trackId,
+//                                 title: track.title,
+//                                 description: track.description,
+//                                 coverImageUrl: track.coverImageUrl,
+//                                 audioUrl: localFilePath,
+//                                 durationSeconds: track.durationSeconds,
+//                                 categoryName: track.categoryName,
+//                               );
+//                               playerController.setPlaylist([trackModel], initialIndex: 0);
+//                               Get.to(() => const NowPlayingScreen());
+//                             } else {
+//                               Get.snackbar(
+//                                 'File Not Found',
+//                                 'The downloaded file could not be found.',
+//                                 backgroundColor: Colors.red,
+//                                 colorText: Colors.white,
+//                                 snackPosition: SnackPosition.BOTTOM,
+//                                 duration: const Duration(seconds: 3),
+//                               );
+//                             }
+//                           },
+//                           onDelete: () async {
+//                             final confirm = await showDialog<bool>(
+//                               context: context,
+//                               barrierDismissible: false,
+//                               builder: (context) => AlertDialog(
+//                                 backgroundColor: const Color(0xFF151932),
+//                                 shape: RoundedRectangleBorder(
+//                                   borderRadius: BorderRadius.circular(16),
+//                                 ),
+//                                 title: const Text(
+//                                   'Delete Download',
+//                                   style: TextStyle(color: Colors.white),
+//                                 ),
+//                                 content: Text(
+//                                   'Are you sure you want to delete "${track.title}"?',
+//                                   style: const TextStyle(color: Colors.white70),
+//                                 ),
+//                                 actions: [
+//                                   TextButton(
+//                                     onPressed: () => Navigator.pop(context, false),
+//                                     child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+//                                   ),
+//                                   TextButton(
+//                                     onPressed: () => Navigator.pop(context, true),
+//                                     child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+//                                   ),
+//                                 ],
+//                               ),
+//                             );
+//
+//                             if (confirm == true) {
+//                               await controller.deleteDownload(track.id, track.trackId);
+//                             }
+//                           },
+//                         );
+//                       },
+//                       childCount: completedDownloadsFromApi.length,
+//                     ),
+//                   ),
+//                 ],
+//
+//                 // Loading indicator at bottom for pagination
+//                 if (controller.isLoading.value && completedDownloadsFromApi.isNotEmpty) ...[
+//                   const SliverToBoxAdapter(
+//                     child: Padding(
+//                       padding: EdgeInsets.all(16),
+//                       child: Center(
+//                         child: CircularProgressIndicator(
+//                           strokeWidth: 2,
+//                           valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//
+//                 // Bottom padding
+//                 const SliverToBoxAdapter(child: SizedBox(height: 160)),
+//               ],
+//             ),
+//           );
+//         }),
+//       ),
+//     );
+//   }
+// }
+//
+// // Active Download Card (with progress bar and cancel button)
+// class _ActiveDownloadCard extends StatelessWidget {
+//   final DownloadState downloadState;
+//   final VoidCallback onCancel;
+//
+//   const _ActiveDownloadCard({
+//     required this.downloadState,
+//     required this.onCancel,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Padding(
+//           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+//           child: Row(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               // Thumbnail
+//               ClipRRect(
+//                 borderRadius: BorderRadius.circular(10),
+//                 child: CachedNetworkImage(
+//                   imageUrl: downloadState.coverImageUrl,
+//                   width: 72,
+//                   height: 72,
+//                   fit: BoxFit.cover,
+//                   placeholder: (_, __) => Container(
+//                     width: 72,
+//                     height: 72,
+//                     color: const Color(0xFF1E2340),
+//                     child: const Center(
+//                       child: CircularProgressIndicator(
+//                         strokeWidth: 2,
+//                         valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+//                       ),
+//                     ),
+//                   ),
+//                   errorWidget: (_, __, ___) => Container(
+//                     width: 72,
+//                     height: 72,
+//                     color: const Color(0xFF1E2340),
+//                     child: const Icon(Icons.music_note, color: Color(0xFF9AA4B2), size: 32),
+//                   ),
+//                 ),
+//               ),
+//               const SizedBox(width: 14),
+//
+//               // Info
+//               Expanded(
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Row(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Expanded(
+//                           child: Column(
+//                             crossAxisAlignment: CrossAxisAlignment.start,
+//                             children: [
+//                               Text(
+//                                 downloadState.trackTitle,
+//                                 style: const TextStyle(
+//                                   color: Colors.white,
+//                                   fontSize: 15,
+//                                   fontWeight: FontWeight.w600,
+//                                 ),
+//                                 maxLines: 1,
+//                                 overflow: TextOverflow.ellipsis,
+//                               ),
+//                               const SizedBox(height: 2),
+//                               Text(
+//                                 downloadState.categoryName,
+//                                 style: const TextStyle(
+//                                   color: Color(0xFF7B61FF),
+//                                   fontSize: 12,
+//                                   fontWeight: FontWeight.w500,
+//                                 ),
+//                               ),
+//                               const SizedBox(height: 4),
+//                               Text(
+//                                 downloadState.formattedDuration,
+//                                 style: TextStyle(
+//                                   color: Colors.white.withOpacity(0.45),
+//                                   fontSize: 12,
+//                                 ),
+//                               ),
+//                             ],
+//                           ),
+//                         ),
+//                         // Cancel button
+//                         GestureDetector(
+//                           onTap: onCancel,
+//                           child: Padding(
+//                             padding: const EdgeInsets.only(left: 8, top: 2),
+//                             child: Icon(
+//                               Icons.close,
+//                               size: 18,
+//                               color: Colors.white.withOpacity(0.55),
+//                             ),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//
+//         // Progress bar
+//         Padding(
+//           padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               ClipRRect(
+//                 borderRadius: BorderRadius.circular(4),
+//                 child: LinearProgressIndicator(
+//                   value: downloadState.progressPercent / 100,
+//                   minHeight: 4,
+//                   backgroundColor: Colors.white.withOpacity(0.1),
+//                   valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
+//                 ),
+//               ),
+//               const SizedBox(height: 6),
+//               Text(
+//                 '${downloadState.progressPercent}% Complete',
+//                 style: TextStyle(
+//                   color: Colors.white.withOpacity(0.4),
+//                   fontSize: 11,
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//         const _RowDivider(),
+//       ],
+//     );
+//   }
+// }
+//
+// // Completed Download Card
+// class _CompletedDownloadCard extends StatelessWidget {
+//   final DownloadedTrack track;
+//   final VoidCallback onTap;
+//   final VoidCallback onDelete;
+//
+//   const _CompletedDownloadCard({
+//     required this.track,
+//     required this.onTap,
+//     required this.onDelete,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       behavior: HitTestBehavior.opaque,
+//       child: Column(
+//         children: [
+//           Padding(
+//             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+//             child: Row(
+//               crossAxisAlignment: CrossAxisAlignment.center,
+//               children: [
+//                 // Thumbnail
+//                 ClipRRect(
+//                   borderRadius: BorderRadius.circular(10),
+//                   child: CachedNetworkImage(
+//                     imageUrl: track.coverImageUrl,
+//                     width: 72,
+//                     height: 72,
+//                     fit: BoxFit.cover,
+//                     placeholder: (_, __) => Container(
+//                       width: 72,
+//                       height: 72,
+//                       color: const Color(0xFF1E2340),
+//                       child: const Center(
+//                         child: CircularProgressIndicator(
+//                           strokeWidth: 2,
+//                           valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+//                         ),
+//                       ),
+//                     ),
+//                     errorWidget: (_, __, ___) => Container(
+//                       width: 72,
+//                       height: 72,
+//                       color: const Color(0xFF1E2340),
+//                       child: const Icon(Icons.music_note, color: Color(0xFF9AA4B2), size: 32),
+//                     ),
+//                   ),
+//                 ),
+//                 const SizedBox(width: 14),
+//
+//                 // Info
+//                 Expanded(
+//                   child: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       Text(
+//                         track.title,
+//                         style: const TextStyle(
+//                           color: Colors.white,
+//                           fontSize: 15,
+//                           fontWeight: FontWeight.w600,
+//                         ),
+//                         maxLines: 1,
+//                         overflow: TextOverflow.ellipsis,
+//                       ),
+//                       const SizedBox(height: 2),
+//                       Text(
+//                         track.categoryName,
+//                         style: const TextStyle(
+//                           color: Color(0xFF7B61FF),
+//                           fontSize: 12,
+//                           fontWeight: FontWeight.w500,
+//                         ),
+//                       ),
+//                       const SizedBox(height: 4),
+//                       Text(
+//                         track.formattedDuration,
+//                         style: TextStyle(
+//                           color: Colors.white.withOpacity(0.45),
+//                           fontSize: 12,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//
+//                 // Delete button
+//                 GestureDetector(
+//                   onTap: onDelete,
+//                   child: Container(
+//                     padding: const EdgeInsets.all(8),
+//                     child: Icon(
+//                       Icons.delete_outline_rounded,
+//                       size: 22,
+//                       color: Colors.red[400],
+//                     ),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           const _RowDivider(),
+//         ],
+//       ),
+//     );
+//   }
+// }
+//
+// // Thin row divider
+// class _RowDivider extends StatelessWidget {
+//   const _RowDivider();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Divider(
+//       height: 1,
+//       thickness: 0.5,
+//       color: Colors.white.withOpacity(0.08),
+//       indent: 20,
+//       endIndent: 20,
+//     );
+//   }
+// }
 
-class DownloadScreen extends StatefulWidget {
+
+
+
+
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:outdoor_therapy/core/app_colors.dart';
+import 'package:outdoor_therapy/core/widget/player_controller.dart';
+import '../../../core/download_service.dart';
+import '../../../model/category_model.dart';
+import '../../../features/views/now_playing/now_playing_screen.dart';
+import 'download_controller.dart';
+
+class DownloadScreen extends StatelessWidget {
   const DownloadScreen({super.key});
 
   @override
-  State<DownloadScreen> createState() => _DownloadScreenState();
-}
-
-class _DownloadScreenState extends State<DownloadScreen> {
-  // Active downloads with progress
-  final List<_DownloadingItem> _downloading = [
-    _DownloadingItem(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-      image: 'assets/images/dummy_image2.jpg',
-      progress: 0.24,
-    ),
-    _DownloadingItem(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-      image: 'assets/images/dummy_image2.jpg',
-      progress: 0.24,
-    ),
-  ];
-
-  // Completed downloads
-  final List<_DownloadedItem> _downloaded = [
-    _DownloadedItem(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-      image: 'assets/images/dummy_image2.jpg',
-    ),
-    _DownloadedItem(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-      image: 'assets/images/dummy_image2.jpg',
-    ),
-    _DownloadedItem(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-      image: 'assets/images/dummy_image2.jpg',
-    ),
-    _DownloadedItem(
-      title: 'Ocean Waves',
-      duration: '45:00',
-      description: 'Calming Ocean Waves Washing Upon The Shore.',
-      image: 'assets/images/dummy_image2.jpg',
-    ),
-  ];
-
-  void _cancelDownload(int index) {
-    setState(() => _downloading.removeAt(index));
-  }
-
-  void _deleteDownloaded(int index) {
-    setState(() => _downloaded.removeAt(index));
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final DownloadController controller = Get.put(DownloadController());
+    final DownloadService downloadService = Get.find<DownloadService>();
+    final PlayerController playerController = Get.find<PlayerController>();
+
     return Scaffold(
       backgroundColor: AppColors.backGroundColor,
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
+        child: Obx(() {
+          // Get active downloads from service
+          final activeDownloads = downloadService.activeDownloads.values.toList();
+          final completedDownloadsFromApi = controller.downloadedTracks;
 
-            // ── Header ──────────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Downloads',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
+          // Combine: show downloading from service + completed from API
+          final hasActiveDownloads = activeDownloads.isNotEmpty;
+          final hasCompletedDownloads = completedDownloadsFromApi.isNotEmpty;
+
+          // Always show header, regardless of content
+          return RefreshIndicator(
+            onRefresh: () async {
+              await controller.refresh();
+              downloadService.refreshActiveDownloads();
+            },
+            color: const Color(0xFF7B61FF),
+            backgroundColor: const Color(0xFF151932),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                // Header - Always visible
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Downloads',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${completedDownloadsFromApi.length + activeDownloads.length} sounds downloaded',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.45),
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_downloaded.length} sounds downloaded',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.45),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                  ],
+                  ),
                 ),
-              ),
+
+                // Loading state content
+                if (controller.isLoading.value && completedDownloadsFromApi.isEmpty && activeDownloads.isEmpty) ...[
+                  const SliverFillRemaining(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Error state content
+                if (controller.errorMessage.isNotEmpty && completedDownloadsFromApi.isEmpty && activeDownloads.isEmpty) ...[
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                color: Color(0xFF9AA4B2), size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              controller.errorMessage.value,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFF9AA4B2),
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton(
+                              onPressed: () async {
+                                await controller.refresh();
+                                downloadService.refreshActiveDownloads();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7B61FF),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Empty state content (no downloads)
+                if (!hasActiveDownloads && !hasCompletedDownloads && !controller.isLoading.value && controller.errorMessage.isEmpty) ...[
+                  SliverFillRemaining(
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cloud_download_outlined,
+                            size: 64,
+                            color: Color(0xFF9AA4B2),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No downloads yet',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Download your favorite sounds to listen offline',
+                            style: TextStyle(
+                              color: Color(0xFF9AA4B2),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Active Downloads Section (Downloading)
+                if (activeDownloads.isNotEmpty) ...[
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Text(
+                        'Downloading',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        final download = activeDownloads[index];
+                        return _ActiveDownloadCard(
+                          downloadState: download,
+                          onCancel: () async {
+                            // Show confirmation dialog before cancelling
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: const Color(0xFF151932),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: const Text(
+                                  'Cancel Download',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                content: Text(
+                                  'Are you sure you want to cancel downloading "${download.trackTitle}"?',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text(
+                                      'No',
+                                      style: TextStyle(color: Colors.white54),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text(
+                                      'Yes, Cancel',
+                                      style: TextStyle(color: Colors.redAccent),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              // Cancel the download
+                              downloadService.cancelDownload(download.trackId);
+
+                              Get.snackbar(
+                                'Cancelled',
+                                '${download.trackTitle} download cancelled',
+                                backgroundColor: Colors.orange,
+                                colorText: Colors.white,
+                                snackPosition: SnackPosition.BOTTOM,
+                                duration: const Duration(seconds: 2),
+                              );
+                            }
+                          },
+                        );
+                      },
+                      childCount: activeDownloads.length,
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                ],
+
+                // Completed Downloads Section
+                if (completedDownloadsFromApi.isNotEmpty) ...[
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Text(
+                        'Downloaded',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        final track = completedDownloadsFromApi[index];
+                        return _CompletedDownloadCard(
+                          track: track,
+                          onTap: () async {
+                            // Play the downloaded track
+                            final localFilePath = await track.getLocalFilePath();
+
+                            if (localFilePath != null) {
+                              final trackModel = TrackModel(
+                                id: track.trackId,
+                                title: track.title,
+                                description: track.description,
+                                coverImageUrl: track.coverImageUrl,
+                                audioUrl: localFilePath,
+                                durationSeconds: track.durationSeconds,
+                                categoryName: track.categoryName,
+                              );
+                              playerController.setPlaylist([trackModel], initialIndex: 0);
+                              Get.to(() => const NowPlayingScreen());
+                            } else {
+                              Get.snackbar(
+                                'File Not Found',
+                                'The downloaded file could not be found.',
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                                snackPosition: SnackPosition.BOTTOM,
+                                duration: const Duration(seconds: 3),
+                              );
+                            }
+                          },
+                          onDelete: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: const Color(0xFF151932),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: const Text(
+                                  'Delete Download',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                content: Text(
+                                  'Are you sure you want to delete "${track.title}"?',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              await controller.deleteDownload(track.id, track.trackId);
+                            }
+                          },
+                        );
+                      },
+                      childCount: completedDownloadsFromApi.length,
+                    ),
+                  ),
+                ],
+
+                // Loading indicator at bottom for pagination
+                if (controller.isLoading.value && completedDownloadsFromApi.isNotEmpty) ...[
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Bottom padding
+                const SliverToBoxAdapter(child: SizedBox(height: 160)),
+              ],
             ),
-
-            // ── Downloading section ─────────────────────────────────────
-            if (_downloading.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: const Text(
-                    'Downloading',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) => _DownloadingCard(
-                    item: _downloading[index],
-                    onCancel: () => _cancelDownload(index),
-                  ),
-                  childCount: _downloading.length,
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 28)),
-            ],
-
-            // ── Downloaded section ──────────────────────────────────────
-            if (_downloaded.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: const Text(
-                    'Downloaded',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) => _DownloadedCard(
-                    item: _downloaded[index],
-                    onDelete: () => _deleteDownloaded(index),
-                  ),
-                  childCount: _downloaded.length,
-                ),
-              ),
-            ],
-
-            // Bottom padding for mini player + nav bar
-            const SliverToBoxAdapter(child: SizedBox(height: 160)),
-          ],
-        ),
+          );
+        }),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Downloading card — with progress bar + cancel ×
-// ─────────────────────────────────────────────────────────────────────────────
-class _DownloadingCard extends StatelessWidget {
-  final _DownloadingItem item;
+// Active Download Card (with progress bar and cancel button)
+class _ActiveDownloadCard extends StatelessWidget {
+  final DownloadState downloadState;
   final VoidCallback onCancel;
 
-  const _DownloadingCard({required this.item, required this.onCancel});
+  const _ActiveDownloadCard({
+    required this.downloadState,
+    required this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +1030,32 @@ class _DownloadingCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Thumbnail
-              _Thumbnail(imagePath: item.image),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CachedNetworkImage(
+                  imageUrl: downloadState.coverImageUrl,
+                  width: 72,
+                  height: 72,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(
+                    width: 72,
+                    height: 72,
+                    color: const Color(0xFF1E2340),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    width: 72,
+                    height: 72,
+                    color: const Color(0xFF1E2340),
+                    child: const Icon(Icons.music_note, color: Color(0xFF9AA4B2), size: 32),
+                  ),
+                ),
+              ),
               const SizedBox(width: 14),
 
               // Info
@@ -202,31 +1071,31 @@ class _DownloadingCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                item.title,
+                                downloadState.trackTitle,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                item.duration,
+                                downloadState.categoryName,
+                                style: const TextStyle(
+                                  color: Color(0xFF7B61FF),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                downloadState.formattedDuration,
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.45),
                                   fontSize: 12,
                                 ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                item.description,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.55),
-                                  fontSize: 12,
-                                  height: 1.4,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -252,7 +1121,7 @@ class _DownloadingCard extends StatelessWidget {
           ),
         ),
 
-        // Progress bar + label
+        // Progress bar
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
           child: Column(
@@ -261,17 +1130,15 @@ class _DownloadingCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
-                  value: item.progress,
+                  value: downloadState.progressPercent / 100,
                   minHeight: 4,
                   backgroundColor: Colors.white.withOpacity(0.1),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF6C5ECF),
-                  ),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6C5ECF)),
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                '${(item.progress * 100).toInt()}% Complete',
+                '${downloadState.progressPercent}% Complete',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.4),
                   fontSize: 11,
@@ -280,130 +1147,124 @@ class _DownloadingCard extends StatelessWidget {
             ],
           ),
         ),
-
-        // Divider
         const _RowDivider(),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Downloaded card — with delete 🗑 icon
-// ─────────────────────────────────────────────────────────────────────────────
-class _DownloadedCard extends StatelessWidget {
-  final _DownloadedItem item;
+// Completed Download Card
+class _CompletedDownloadCard extends StatelessWidget {
+  final DownloadedTrack track;
+  final VoidCallback onTap;
   final VoidCallback onDelete;
 
-  const _DownloadedCard({required this.item, required this.onDelete});
+  const _CompletedDownloadCard({
+    required this.track,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Thumbnail
-              _Thumbnail(imagePath: item.image),
-              const SizedBox(width: 14),
-
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: CachedNetworkImage(
+                    imageUrl: track.coverImageUrl,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      width: 72,
+                      height: 72,
+                      color: const Color(0xFF1E2340),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.duration,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.45),
-                        fontSize: 12,
-                      ),
+                    errorWidget: (_, __, ___) => Container(
+                      width: 72,
+                      height: 72,
+                      color: const Color(0xFF1E2340),
+                      child: const Icon(Icons.music_note, color: Color(0xFF9AA4B2), size: 32),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      item.description,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.55),
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Delete button
-              GestureDetector(
-                onTap: onDelete,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Icon(
-                    Icons.delete_outline_rounded,
-                    size: 22,
-                    color: Colors.red[400],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const _RowDivider(),
-      ],
-    );
-  }
-}
+                const SizedBox(width: 14),
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Shared thumbnail widget
-// ─────────────────────────────────────────────────────────────────────────────
-class _Thumbnail extends StatelessWidget {
-  final String imagePath;
-  const _Thumbnail({required this.imagePath});
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        track.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        track.categoryName,
+                        style: const TextStyle(
+                          color: Color(0xFF7B61FF),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        track.formattedDuration,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.45),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Image.asset(
-        imagePath,
-        width: 72,
-        height: 72,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1A5276), Color(0xFF117A65)],
+                // Delete button
+                GestureDetector(
+                  onTap: onDelete,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 22,
+                      color: Colors.red[400],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: const Icon(Icons.waves_outlined, color: Colors.white38, size: 28),
-        ),
+          const _RowDivider(),
+        ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Thin row divider
-// ─────────────────────────────────────────────────────────────────────────────
+// Thin row divider
 class _RowDivider extends StatelessWidget {
   const _RowDivider();
 
@@ -417,37 +1278,4 @@ class _RowDivider extends StatelessWidget {
       endIndent: 20,
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Data models
-// ─────────────────────────────────────────────────────────────────────────────
-class _DownloadingItem {
-  final String title;
-  final String duration;
-  final String description;
-  final String image;
-  final double progress; // 0.0 – 1.0
-
-  const _DownloadingItem({
-    required this.title,
-    required this.duration,
-    required this.description,
-    required this.image,
-    required this.progress,
-  });
-}
-
-class _DownloadedItem {
-  final String title;
-  final String duration;
-  final String description;
-  final String image;
-
-  const _DownloadedItem({
-    required this.title,
-    required this.duration,
-    required this.description,
-    required this.image,
-  });
 }

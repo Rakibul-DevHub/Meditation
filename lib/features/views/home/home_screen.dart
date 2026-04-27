@@ -3,8 +3,9 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/app_colors.dart';
-import '../../../core/widget/player_service.dart';
+import '../../../core/widget/player_controller.dart';
 import '../../../model/category_model.dart';
+import '../../../features/views/now_playing/now_playing_screen.dart';
 import 'home_screen_controller.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,23 +28,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final String greeting = HomeScreen._getGreeting();
-  final PlayerService _playerService = PlayerService();
+  final PlayerController _playerController = Get.find<PlayerController>();
   final HomeScreenController _controller = Get.put(HomeScreenController());
 
-  void _playTrack(TrackModel track) {
-    final trackData = {
-      'id': track.id,
-      'title': track.title ?? 'Unknown Track',
-      'subtitle': _controller.getCategoryName(track),
-      'image': track.coverImageUrl ?? '',
-      'duration': _controller.formatDuration(track.durationSeconds),
-      'description': 'Now playing ${track.title}',
-      'category': _controller.getCategoryName(track),
-      'audioUrl': track.audioUrl ?? '',
-      'coverImageUrl': track.coverImageUrl ?? '',
-    };
-
-    _playerService.playTrack(trackData);
+  void _playTrack(TrackModel track, List<TrackModel> playlist, int index) {
+    _playerController.setPlaylist(playlist, initialIndex: index);
+    Get.to(() => const NowPlayingScreen());
   }
 
   @override
@@ -105,7 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 Obx(() {
-                  // Show shimmer during initial load OR during refresh
                   final shouldShowShimmer = (_controller.isLoadingFeatured.value && _controller.featuredTracks.isEmpty) ||
                       _controller.isRefreshingFeatured.value;
 
@@ -156,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemBuilder: (context, index) {
                         final track = _controller.featuredTracks[index];
                         return GestureDetector(
-                          onTap: () => _playTrack(track),
+                          onTap: () => _playTrack(track, _controller.featuredTracks, index),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -266,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemBuilder: (context, index) {
                         final track = _controller.sleepTonightTracks[index];
                         return GestureDetector(
-                          onTap: () => _playTrack(track),
+                          onTap: () => _playTrack(track, _controller.sleepTonightTracks, index),
                           child: SleepCard(
                             title: track.title ?? 'Unknown',
                             duration: _controller.formatDuration(track.durationSeconds),
@@ -333,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemBuilder: (context, index) {
                       final track = _controller.popularTracks[index];
                       return GestureDetector(
-                        onTap: () => _playTrack(track),
+                        onTap: () => _playTrack(track, _controller.popularTracks, index),
                         child: Row(
                           children: [
                             Container(
@@ -385,7 +374,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                             ),
-                            const Icon(Icons.play_arrow_rounded, color: AppColors.whiteColor70,size: 30,),
+                            // Play/Pause icon based on current playing track
+                            Obx(() {
+                              final isCurrentTrack = _playerController.currentTrack.value?.id == track.id;
+                              final isPlaying = _playerController.isPlaying.value;
+
+                              return Icon(
+                                (isCurrentTrack && isPlaying) ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                color: AppColors.whiteColor70,
+                                size: 30,
+                              );
+                            }),
                             const SizedBox(width: 12),
                             const Icon(Icons.favorite_border, color: AppColors.whiteColor70),
                           ],

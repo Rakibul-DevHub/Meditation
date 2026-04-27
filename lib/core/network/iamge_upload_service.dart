@@ -22,7 +22,7 @@
 //       };
 //
 //       final response = await _networkCaller.putMultipartRequest(
-//         AppUrl.updatePersonalInformationProfileImage,
+//         AppUrl.updateMyProfile,
 //         files: files,
 //         headers: {'Authorization': 'Bearer $token'},
 //       );
