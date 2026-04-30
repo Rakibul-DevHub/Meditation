@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/network/app_url.dart';
@@ -16,10 +15,29 @@ class MenuScreenController extends GetxController {
   // Settings
   final RxBool notificationsEnabled = false.obs;
   final RxString sleepTimer = 'Off'.obs;
+  final RxBool isSavingSleepTimer = false.obs;
 
+  /// Maps display label → integer minutes sent to the API.
+  /// 'Off' → 0, '15 min' → 15, etc.
   final List<String> sleepTimerOptions = [
-    'Off', '15 min', '30 min', '45 min', '60 min',
+    'Off',
+    '15 min',
+    '30 min',
+    '45 min',
+    '60 min',
   ];
+
+  int _labelToMinutes(String label) {
+    if (label == 'Off') return 00;
+    // Extract the number from strings like '15 min'
+    final match = RegExp(r'\d+').firstMatch(label);
+    return match != null ? int.parse(match.group(0)!) : 0;
+  }
+
+  String _minutesToLabel(int minutes) {
+    if (minutes == 0) return 'Off';
+    return '$minutes min';
+  }
 
   @override
   void onInit() {
@@ -27,7 +45,8 @@ class MenuScreenController extends GetxController {
     fetchUserProfile();
   }
 
-  // Fetch user profile from API
+  // ── Profile ────────────────────────────────────────────────────────────────
+
   Future<void> fetchUserProfile({bool showLoading = true}) async {
     if (showLoading && userData.isEmpty) {
       isLoading.value = true;
@@ -42,123 +61,154 @@ class MenuScreenController extends GetxController {
         return;
       }
 
-      debugPrint('🔑 Fetching user profile...');
-
       final response = await _networkCaller.getRequest(
         AppUrl.getMyProfile,
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      debugPrint('📡 Profile Response Status: ${response.statusCode}');
-      debugPrint('📡 Profile Response Success: ${response.isSuccess}');
-      debugPrint('📡 Profile Response Body: ${response.jsonResponse}');
-
       if (response.isSuccess && response.jsonResponse != null) {
-        // ✅ FIX: Extract the data object from the response
         final jsonResponse = response.jsonResponse!;
+        final data = jsonResponse.containsKey('data') && jsonResponse['data'] != null
+            ? Map<String, dynamic>.from(jsonResponse['data'])
+            : jsonResponse;
 
-        if (jsonResponse.containsKey('data') && jsonResponse['data'] != null) {
-          userData.value = Map<String, dynamic>.from(jsonResponse['data']);
-          debugPrint('✅ Profile data loaded: ${userData['email']}');
-        } else {
-          userData.value = jsonResponse;
-          debugPrint('⚠️ No data wrapper found, using full response');
-        }
-
+        userData.value = data;
         errorMessage.value = '';
+
+        // Restore sleep timer value from profile if the API returns it
+        final serverMinutes = data['sleepTimer'];
+        if (serverMinutes != null) {
+          final minutes = serverMinutes is int
+              ? serverMinutes
+              : int.tryParse(serverMinutes.toString()) ?? 0;
+          sleepTimer.value = _minutesToLabel(minutes);
+        }
       } else {
         if (userData.isEmpty) {
           errorMessage.value = response.errorMessage ?? 'Failed to load profile';
         }
-        debugPrint('❌ Profile Error: ${response.errorMessage}');
       }
     } catch (e) {
-      if (userData.isEmpty) {
-        errorMessage.value = 'An unexpected error occurred';
-      }
-      debugPrint('❌ Exception fetching profile: $e');
+      if (userData.isEmpty) errorMessage.value = 'An unexpected error occurred';
+      debugPrint('Exception fetching profile: $e');
     } finally {
       if (showLoading) isLoading.value = false;
     }
   }
 
-  // Refresh profile (for pull-to-refresh)
-  Future<void> refreshProfile() async {
-    await fetchUserProfile(showLoading: false);
-  }
+  Future<void> refreshProfile() async => fetchUserProfile(showLoading: false);
 
-  // Get full name from user data
-  String getFullName() {
-    final firstName = userData['firstName'] ?? '';
-    final lastName = userData['lastName'] ?? '';
-    final fullName = userData['fullName'] ?? '';
+  // ── Sleep timer ───────────────────────────────────────────────────────────
 
-    if (fullName.isNotEmpty && fullName != "") return fullName;
-    if (firstName.isNotEmpty || lastName.isNotEmpty) {
-      return '$firstName $lastName'.trim();
-    }
-    // If no name, use email username or show "User"
-    final email = userData['email'] ?? '';
-    if (email.isNotEmpty) {
-      return email.split('@').first;
-    }
-    return 'User';
-  }
+  /// Called when the user picks a new timer option.
+  /// Updates UI immediately, then patches the server.
+  Future<void> updateSleepTimer(String label) async {
+    sleepTimer.value = label;
+    final minutes = _labelToMinutes(label); // 'Off' → 0, '15 min' → 15, etc.
 
-  // Get email from user data
-  String getEmail() {
-    return userData['email'] ?? '';
-  }
+    isSavingSleepTimer.value = true;
+    try {
+      final token = await SecureStorageService.instance.getAccessToken();
+      if (token == null || token.isEmpty) return;
 
-  // Get user type (PREMIUM/FREE)
-  String getUserType() {
-    final userType = userData['userType'] ?? 'FREE';
-    return userType == 'PREMIUM' ? 'Premium Member' : 'Free Member';
-  }
+      debugPrint('Patching sleepTimer → $minutes');
 
-  // Get profile image URL
-  String getProfileImage() {
-    return userData['profileImage'] ?? '';
-  }
+      // Build body this way so 0 is never dropped by any null/falsy filtering
+      // in the network layer — it is an explicit int, not a nullable value.
+      final Map<String, dynamic> body = <String, dynamic>{};
+      body['sleepTimer'] = minutes.toString(); // always an int: 0, 15, 30, 45, 60
 
-  // Check if user is premium
-  bool isPremium() {
-    return userData['userType'] == 'PREMIUM';
-  }
+      final response = await _networkCaller.patchRequest(
+        AppUrl.updateMyProfile,
+        body: body,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
-  // Get member since year
-  String getMemberSince() {
-    final createdAt = userData['createdAt'];
-    if (createdAt != null && createdAt is String && createdAt.isNotEmpty) {
-      try {
-        final date = DateTime.parse(createdAt);
-        return 'Member since ${date.year}';
-      } catch (e) {
-        return '';
+      if (response.isSuccess) {
+        debugPrint('Sleep timer saved: $minutes min');
+        Get.snackbar(
+          'Sleep Timer',
+          label == 'Off' ? 'Sleep timer turned off' : 'Sleep timer set to $label',
+          backgroundColor: const Color(0xFF6C5ECF),
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      } else {
+        debugPrint('Sleep timer update failed: ${response.errorMessage}');
+        Get.snackbar(
+          'Failed',
+          response.errorMessage ?? 'Could not save sleep timer',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
       }
+    } catch (e) {
+      debugPrint('Sleep timer patch error: $e');
+      Get.snackbar(
+        'Error',
+        'Could not save sleep timer. Please try again.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    } finally {
+      isSavingSleepTimer.value = false;
     }
-    return '';
   }
 
-  // Update sleep timer
-  void updateSleepTimer(String value) {
-    sleepTimer.value = value;
-    // TODO: Save to API if needed
-  }
+  // ── Notifications ─────────────────────────────────────────────────────────
 
-  // Toggle notifications
   void toggleNotifications(bool value) {
     notificationsEnabled.value = value;
     // TODO: Save to API if needed
   }
 
-  // Logout user
+  // ── Logout ────────────────────────────────────────────────────────────────
+
   Future<void> logout() async {
     await SecureStorageService.instance.clearAll();
-    Get.offAllNamed('/login'); // Adjust to your login route
+    Get.offAllNamed('/login');
   }
 
-  // Show sleep timer picker
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  String getFullName() {
+    final firstName = userData['firstName'] ?? '';
+    final lastName  = userData['lastName']  ?? '';
+    final fullName  = userData['fullName']  ?? '';
+    if (fullName.toString().isNotEmpty) return fullName.toString();
+    if (firstName.toString().isNotEmpty || lastName.toString().isNotEmpty) {
+      return '$firstName $lastName'.trim();
+    }
+    final email = userData['email'] ?? '';
+    return email.toString().isNotEmpty ? email.toString().split('@').first : 'User';
+  }
+
+  String getEmail() => userData['email']?.toString() ?? '';
+
+  String getUserType() =>
+      (userData['userType'] ?? 'FREE') == 'PREMIUM' ? 'Premium Member' : 'Free Member';
+
+  String getProfileImage() => userData['profileImage']?.toString() ?? '';
+
+  bool isPremium() => userData['userType'] == 'PREMIUM';
+
+  String getMemberSince() {
+    final createdAt = userData['createdAt'];
+    if (createdAt != null && createdAt.toString().isNotEmpty) {
+      try {
+        return 'Member since ${DateTime.parse(createdAt.toString()).year}';
+      } catch (_) {}
+    }
+    return '';
+  }
+
+  // ── Sleep timer bottom sheet ──────────────────────────────────────────────
+
   void showSleepTimerPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -166,12 +216,13 @@ class MenuScreenController extends GetxController {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Column(
+      builder: (_) => Obx(() => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
               color: Colors.white24,
               borderRadius: BorderRadius.circular(2),
@@ -180,22 +231,43 @@ class MenuScreenController extends GetxController {
           const SizedBox(height: 16),
           const Text(
             'Sleep Timer',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          ...sleepTimerOptions.map((opt) => ListTile(
-            title: Text(opt, style: const TextStyle(color: Colors.white, fontSize: 15)),
-            trailing: sleepTimer.value == opt
-                ? const Icon(Icons.check, color: Color(0xFF6C5ECF))
-                : null,
-            onTap: () {
-              updateSleepTimer(opt);
-              Navigator.pop(context);
-            },
-          )),
+          ...sleepTimerOptions.map(
+                (opt) => ListTile(
+              title: Text(opt,
+                  style: const TextStyle(color: Colors.white, fontSize: 15)),
+              trailing: isSavingSleepTimer.value && sleepTimer.value == opt
+              // Show a small spinner while this option is saving
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Color(0xFF6C5ECF)),
+              )
+                  : sleepTimer.value == opt
+                  ? const Icon(Icons.check, color: Color(0xFF6C5ECF))
+                  : null,
+              onTap: isSavingSleepTimer.value
+                  ? null // Disable all taps while a save is in-flight
+                  : () {
+                // Close the sheet first, THEN fire the async save.
+                // This prevents the Obx inside the dismissed sheet
+                // from trying to rebuild after it's gone.
+                Navigator.pop(context);
+                // Use Future.microtask so the pop animation
+                // finishes before we start the network call.
+                Future.microtask(() => updateSleepTimer(opt));
+              },
+            ),
+          ),
           const SizedBox(height: 16),
         ],
-      ),
+      )),
     );
   }
 }
