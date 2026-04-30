@@ -123,28 +123,6 @@ class MenuScreenController extends GetxController {
         body: body,
         headers: {'Authorization': 'Bearer $token'},
       );
-
-      if (response.isSuccess) {
-        debugPrint('Sleep timer saved: $minutes min');
-        Get.snackbar(
-          'Sleep Timer',
-          label == 'Off' ? 'Sleep timer turned off' : 'Sleep timer set to $label',
-          backgroundColor: const Color(0xFF6C5ECF),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
-      } else {
-        debugPrint('Sleep timer update failed: ${response.errorMessage}');
-        Get.snackbar(
-          'Failed',
-          response.errorMessage ?? 'Could not save sleep timer',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
-      }
     } catch (e) {
       debugPrint('Sleep timer patch error: $e');
       Get.snackbar(
