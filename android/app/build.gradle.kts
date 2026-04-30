@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.example.outdoor_therapy"
-    compileSdk = 34//flutter.compileSdkVersion
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

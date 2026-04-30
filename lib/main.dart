@@ -6,6 +6,7 @@ import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:outdoor_therapy/features/views/splash/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/download_service.dart';
+import 'features/views/menu/profile/profile_screen_controller.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {

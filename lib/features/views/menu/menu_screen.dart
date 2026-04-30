@@ -14,9 +14,13 @@ class MenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize controllers
+    // Use MenuScreenController for settings only
     final MenuScreenController controller = Get.put(MenuScreenController());
-    final ProfileController profileController = Get.put(ProfileController());
+
+    // ✅ Use ProfileController for user data - Get existing instance or create new one
+    final ProfileController profileController = Get.isRegistered<ProfileController>()
+        ? Get.find<ProfileController>()
+        : Get.put(ProfileController());
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E1A),
@@ -24,7 +28,7 @@ class MenuScreen extends StatelessWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             await controller.refreshProfile();
-            await profileController.refreshProfile();
+            await profileController.refreshProfile(); // Refresh profile data
           },
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -68,7 +72,6 @@ class MenuScreen extends StatelessWidget {
               SliverToBoxAdapter(
                 child: _SettingsGroup(
                   children: [
-                    // Sleep Timer - Only wrap the trailing text in Obx
                     _SettingsTile(
                       icon: Icons.timer_outlined,
                       title: 'Default Sleep Timer',
@@ -99,7 +102,6 @@ class MenuScreen extends StatelessWidget {
                       )),
                     ),
                     const _SettingsDivider(),
-                    // Notifications - Only wrap the Switch in Obx
                     _SettingsTile(
                       icon: Icons.notifications_outlined,
                       title: 'Notifications',
@@ -135,11 +137,10 @@ class MenuScreen extends StatelessWidget {
                           : 'Upgrade to premium for more features',
                       trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 22),
                       onTap: () {
-                        Get.to(() => SubscriptionScreen());
+                        Get.to(() => const SubscriptionScreen());
                       },
                     )),
                     const _SettingsDivider(),
-                    // Privacy Policy
                     _SettingsTile(
                       icon: Icons.shield_outlined,
                       title: 'Privacy Policy',
@@ -153,7 +154,6 @@ class MenuScreen extends StatelessWidget {
                       },
                     ),
                     const _SettingsDivider(),
-                    // Terms of Service
                     _SettingsTile(
                       icon: Icons.description_outlined,
                       title: 'Terms of Service',
@@ -270,7 +270,7 @@ class MenuScreen extends StatelessWidget {
       );
     }
 
-    // Profile data loaded - using ProfileController data
+    // ✅ Profile data loaded - showing FIRST NAME
     return GestureDetector(
       onTap: () {
         Get.to(() => const ProfileScreen());
@@ -318,12 +318,12 @@ class MenuScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Full name - from ProfileController
+                  // ✅ Display FIRST NAME (or full name if first name is empty)
                   Text(
-                    controller.fullName.value.isNotEmpty
+                    controller.firstName.value.isNotEmpty
+                        ? controller.firstName.value
+                        : (controller.fullName.value.isNotEmpty
                         ? controller.fullName.value
-                        : (controller.firstName.value.isNotEmpty || controller.lastName.value.isNotEmpty
-                        ? '${controller.firstName.value} ${controller.lastName.value}'.trim()
                         : controller.email.value.split('@').first),
                     style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
                     maxLines: 1,

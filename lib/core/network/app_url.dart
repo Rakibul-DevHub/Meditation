@@ -34,7 +34,7 @@ class AppUrl {
   static const String termsOfService  = '$baseUrl/app/cms/terms-conditions';
   static const String privacyPolicy  = '$baseUrl/app/cms/privacy-policies';
 
-  // subscription
+  /// subscription
   static const String getSubscriptionPlans  = '$baseUrl/app/subscriptions/plans';
   static const String getSubscriptionStatus  = '$baseUrl/app/subscriptions/status';
   static const String subscribeToPlan  = '$baseUrl/app/subscriptions/create-checkout';

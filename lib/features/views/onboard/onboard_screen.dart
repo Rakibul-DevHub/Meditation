@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../auth/sign_in_screen.dart';
@@ -72,20 +71,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: _currentPage > 0
-            ? IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
-            color: Color(0xffE8EBF2),
-            size: 20,
-          ),
-          onPressed: () {
-            _pageController.previousPage(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          },
-        )
-            : null,
         title: const Text(
           "Sleep",
           style: TextStyle(
