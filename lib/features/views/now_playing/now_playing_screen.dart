@@ -1332,14 +1332,6 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           body: {},
                           headers: {'Authorization': 'Bearer $token'},
                         );
-                        if (res.isSuccess) {
-                          isFavorite.value = true;
-                          Get.snackbar('Added to Favorites', '${t.title} added to favorites.',
-                              backgroundColor: const Color(0xFF7B61FF),
-                              colorText: Colors.white,
-                              snackPosition: SnackPosition.TOP,
-                              duration: const Duration(seconds: 2));
-                        }
                       },
                       constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                     )),

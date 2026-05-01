@@ -1,8 +1,31 @@
-/**
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:outdoor_therapy/features/views/menu/subscription/subscription_controller.dart';
+import 'package:outdoor_therapy/features/views/menu/subscription/subscription_model.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+
+/// In-app Stripe Checkout WebView.
+///
+/// Displays the Stripe hosted checkout page. Listens for redirect URLs:
+///   - success → calls [onSuccess]
+///   - cancel  → calls [onCancel]
+///
+/// Make sure your Stripe session is created with:
+///   success_url: "https://yourapp.com/payment/success" (or a deep link)
+///   cancel_url:  "https://yourapp.com/payment/cancel"
+///
+/// Update [_successUrlPattern] and [_cancelUrlPattern] to match your
+/// actual success/cancel redirect URLs configured on the backend.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:outdoor_therapy/features/views/menu/subscription/subscription_model.dart';
-import 'subscription_controller.dart';
+import 'package:outdoor_therapy/features/views/menu/subscription/subscription_controller.dart';
 
 class SubscriptionScreen extends StatelessWidget {
   const SubscriptionScreen({super.key});
@@ -31,7 +54,7 @@ class SubscriptionScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: Obx(() {
-        // Loading state
+        // ── Loading state ───────────────────────────────────────────────
         if (controller.isLoading.value && controller.plans.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(
@@ -40,7 +63,7 @@ class SubscriptionScreen extends StatelessWidget {
           );
         }
 
-        // Error state
+        // ── Error state ─────────────────────────────────────────────────
         if (controller.errorMessage.isNotEmpty && controller.plans.isEmpty) {
           return RefreshIndicator(
             onRefresh: controller.refresh,
@@ -87,792 +110,60 @@ class SubscriptionScreen extends StatelessWidget {
           );
         }
 
-        // Show subscription plans (always show, even for premium users)
+        // ── Main content ────────────────────────────────────────────────
         return RefreshIndicator(
           onRefresh: controller.refresh,
           color: const Color(0xFF7B61FF),
           backgroundColor: const Color(0xFF151932),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header - Changes based on premium status
-                if (controller.subscriptionStatus.value?.isPremium == true) ...[
-                  // Premium user header
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF7B61FF), Color(0xFF6B51EF)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.verified_user,
-                          size: 48,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Premium Member',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'You are enjoying premium benefits!',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Your Current Plan',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                  // Show current subscription badge
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131929),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF7B61FF), width: 2),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7B61FF).withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.stars,
-                            color: Color(0xFF7B61FF),
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Active Subscription',
-                                style: TextStyle(
-                                  color: Color(0xFF7B61FF),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                controller.subscriptionStatus.value?.userType ?? 'PREMIUM',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'ACTIVE',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'Other Plans',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ] else ...[
-                  // Non-premium user header
-                  const Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          'Unlock Unlimited Sounds',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Choose the plan that works for you',
-                          style: TextStyle(
-                            color: Color(0xFF9AA4B2),
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
-
-                // Plans List
-                ...controller.plans.map((plan) => _buildPlanCard(plan, controller)),
-
-                const SizedBox(height: 24),
-
-                // Payment Method Selection (only show if not premium)
-                if (controller.subscriptionStatus.value?.isPremium != true &&
-                    (controller.stripeEnabled.value || controller.paypalEnabled.value)) ...[
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131929),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Select Payment Method',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            if (controller.stripeEnabled.value)
-                              Expanded(
-                                child: _buildPaymentMethodCard(
-                                  context,
-                                  'stripe',
-                                  '💳 Credit Card',
-                                  controller,
-                                ),
-                              ),
-                            if (controller.stripeEnabled.value && controller.paypalEnabled.value)
-                              const SizedBox(width: 12),
-                            if (controller.paypalEnabled.value)
-                              Expanded(
-                                child: _buildPaymentMethodCard(
-                                  context,
-                                  'paypal',
-                                  '💰 PayPal',
-                                  controller,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Cancel anytime note
-                const Center(
-                  child: Text(
-                    'Cancel anytime • No hidden fees',
-                    style: TextStyle(
-                      color: Color(0xFF64748B),
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 80),
-              ],
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildPaymentMethodCard(BuildContext context, String method, String label, SubscriptionController controller) {
-    return Obx(() => GestureDetector(
-      onTap: () => controller.setPaymentMethod(method),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: controller.selectedPaymentMethod.value == method
-              ? const Color(0xFF7B61FF).withOpacity(0.2)
-              : const Color(0xFF1E2538),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: controller.selectedPaymentMethod.value == method
-                ? const Color(0xFF7B61FF)
-                : Colors.white12,
-            width: controller.selectedPaymentMethod.value == method ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (controller.selectedPaymentMethod.value == method)
-              const Icon(Icons.check_circle, color: Color(0xFF7B61FF), size: 16),
-            if (controller.selectedPaymentMethod.value == method)
-              const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: controller.selectedPaymentMethod.value == method
-                    ? const Color(0xFF7B61FF)
-                    : Colors.white70,
-                fontSize: 14,
-                fontWeight: controller.selectedPaymentMethod.value == method
-                    ? FontWeight.w600
-                    : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ));
-  }
-
-  Widget _buildPlanCard(SubscriptionPlan plan, SubscriptionController controller) {
-    final isPopular = plan.name.contains('Premium') || plan.name.contains('Pro') || plan.price >= 10;
-    final isCurrentPlan = controller.isCurrentPlan(plan.name);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        gradient: isPopular && !isCurrentPlan
-            ? const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF7B61FF), Color(0xFF6B51EF)],
-        )
-            : null,
-        color: isCurrentPlan
-            ? const Color(0xFF1E2538)
-            : (isPopular ? null : const Color(0xFF131929)),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isCurrentPlan
-              ? const Color(0xFF7B61FF)
-              : (isPopular ? Colors.transparent : Colors.white.withOpacity(0.06)),
-          width: isCurrentPlan ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Popular tag or Current Plan tag
-          if (isPopular && !isCurrentPlan)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: const Text(
-                'MOST POPULAR',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          if (isCurrentPlan)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7B61FF),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: const Text(
-                'CURRENT PLAN',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Plan Name
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      plan.name,
-                      style: TextStyle(
-                        color: isPopular || isCurrentPlan ? Colors.white : Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (isCurrentPlan)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'Active',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Price (only show if not current plan)
-                if (!isCurrentPlan)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        plan.formattedPrice,
-                        style: TextStyle(
-                          color: isPopular ? Colors.white : const Color(0xFF7B61FF),
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          plan.intervalText,
-                          style: TextStyle(
-                            color: isPopular ? Colors.white70 : const Color(0xFF9AA4B2),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                if (isCurrentPlan)
-                  const Text(
-                    'Already Subscribed',
-                    style: TextStyle(
-                      color: Color(0xFF7B61FF),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                const SizedBox(height: 20),
-
-                // Features
-                ...plan.description.map((feature) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isCurrentPlan ? Icons.check_circle : Icons.check_circle,
-                        size: 20,
-                        color: isCurrentPlan
-                            ? const Color(0xFF7B61FF)
-                            : (isPopular ? Colors.white : const Color(0xFF7B61FF)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          feature,
-                          style: TextStyle(
-                            color: isCurrentPlan
-                                ? Colors.white
-                                : (isPopular ? Colors.white70 : Colors.white70),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
-
-                // Download limit feature
-                if (plan.downloadLimit > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.cloud_download_outlined,
-                          size: 20,
-                          color: isCurrentPlan
-                              ? const Color(0xFF7B61FF)
-                              : (isPopular ? Colors.white : const Color(0xFF7B61FF)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Up to ${plan.downloadLimit} downloads',
-                            style: TextStyle(
-                              color: isCurrentPlan
-                                  ? Colors.white
-                                  : (isPopular ? Colors.white70 : Colors.white70),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                const SizedBox(height: 24),
-
-                // Subscribe/Upgrade Button
-                if (!isCurrentPlan)
-                  Obx(() => SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: controller.isProcessing.value
-                          ? null
-                          : () => controller.subscribeToPlan(plan),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isPopular ? Colors.white : const Color(0xFF7B61FF),
-                        foregroundColor: isPopular ? const Color(0xFF7B61FF) : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: controller.isProcessing.value
-                          ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                          : Text(
-                        controller.subscriptionStatus.value?.isPremium == true
-                            ? 'Change Plan'
-                            : 'Subscribe Now',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  )),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}*/
-
-
-
-
-
-///
-///
-///
-/// todo:: matching with the UI
-///
-///
-///
-
-
-
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:outdoor_therapy/features/views/menu/subscription/subscription_model.dart';
-import 'subscription_controller.dart';
-
-class SubscriptionScreen extends StatelessWidget {
-  const SubscriptionScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final SubscriptionController controller = Get.put(SubscriptionController());
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0E1A),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Subscription',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Obx(() {
-        // Loading state
-        if (controller.isLoading.value && controller.plans.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)),
-            ),
-          );
-        }
-
-        // Error state
-        if (controller.errorMessage.isNotEmpty && controller.plans.isEmpty) {
-          return RefreshIndicator(
-            onRefresh: controller.refresh,
-            color: const Color(0xFF7B61FF),
-            backgroundColor: const Color(0xFF151932),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            color: Color(0xFF9AA4B2), size: 48),
-                        const SizedBox(height: 12),
-                        Text(
-                          controller.errorMessage.value,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Color(0xFF9AA4B2),
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: controller.refresh,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7B61FF),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: controller.refresh,
-          color: const Color(0xFF7B61FF),
-          backgroundColor: const Color(0xFF151932),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                const Center(
+                // ── Header ────────────────────────────────────────────
+                Center(
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.workspace_premium,
-                        size: 48,
-                        color: Color(0xFF7B61FF),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Unlock Unlimited Sounds and Features',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                      CircleAvatar(
+                        radius: 32,
+                        backgroundColor: const Color(0xFF151932),
+                        child: SvgPicture.asset(
+                          'assets/icons/subscription.svg',
+                          height: 30,
+                          width: 30,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Choose the plan that works for you',
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Unlock unlimited sounds and features',
                         style: TextStyle(
                           color: Color(0xFF9AA4B2),
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
-                // Plans List
-                ...controller.plans.map((plan) {
-                  final isPremium = plan.name.toLowerCase().contains('premium') ||
-                      plan.name.toLowerCase().contains('pro');
-                  final isCurrentPlan = controller.isCurrentPlan(plan.name);
-                  final isSelected = controller.selectedPlanId.value == plan.id || isCurrentPlan;
-
-                  return _buildPlanCard(
-                    plan,
-                    controller,
-                    isPremium,
-                    isSelected,
-                    isCurrentPlan,
-                  );
-                }),
-
+                // ── Plans list ────────────────────────────────────────
+                _buildPlansList(controller),
                 const SizedBox(height: 24),
 
-                // Payment Method Selection (only show if not premium)
-                if (controller.subscriptionStatus.value?.isPremium != true &&
-                    (controller.stripeEnabled.value || controller.paypalEnabled.value)) ...[
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131929),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Select Payment Method',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            if (controller.stripeEnabled.value)
-                              Expanded(
-                                child: _buildPaymentMethodCard(
-                                  context,
-                                  'stripe',
-                                  '💳 Credit Card',
-                                  controller,
-                                ),
-                              ),
-                            if (controller.stripeEnabled.value && controller.paypalEnabled.value)
-                              const SizedBox(width: 12),
-                            if (controller.paypalEnabled.value)
-                              Expanded(
-                                child: _buildPaymentMethodCard(
-                                  context,
-                                  'paypal',
-                                  '💰 PayPal',
-                                  controller,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                // ── Payment + Subscribe (only when not premium) ───────
+                if (controller.subscriptionStatus.value?.isPremium != true) ...[
+                  _buildPaymentSection(controller),
+                  const SizedBox(height: 20),
+                  _buildSubscribeButton(controller),
                 ],
-
-                // Subscribe Button
-                if (controller.subscriptionStatus.value?.isPremium != true)
-                  Obx(() => SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: controller.isProcessing.value || controller.selectedPlanId.isEmpty
-                          ? null
-                          : () {
-                        final selectedPlan = controller.plans.firstWhere(
-                              (p) => p.id == controller.selectedPlanId.value,
-                        );
-                        controller.subscribeToPlan(selectedPlan);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7B61FF),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: controller.isProcessing.value
-                          ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                          : const Text(
-                        'Subscribe Now',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  )),
 
                 const SizedBox(height: 16),
 
-                // Cancel anytime note
+                // ── Footer ────────────────────────────────────────────
                 const Center(
                   child: Text(
                     'Cancel anytime • No hidden fees',
@@ -891,72 +182,267 @@ class SubscriptionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentMethodCard(BuildContext context, String method, String label, SubscriptionController controller) {
-    return Obx(() => GestureDetector(
-      onTap: () => controller.setPaymentMethod(method),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: controller.selectedPaymentMethod.value == method
-              ? const Color(0xFF7B61FF).withOpacity(0.2)
-              : const Color(0xFF1E2538),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: controller.selectedPaymentMethod.value == method
-                ? const Color(0xFF7B61FF)
-                : Colors.white12,
-            width: controller.selectedPaymentMethod.value == method ? 2 : 1,
+  // ─────────────────────────────────────────────────────────────────────────
+  // Subscribe button
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildSubscribeButton(SubscriptionController controller) {
+    return Obx(() {
+      final bool isPayPalSelected =
+          controller.selectedPaymentMethod.value == 'paypal';
+      final bool canSubscribe = !controller.isProcessing.value &&
+          controller.selectedPlanId.isNotEmpty &&
+          !isPayPalSelected;
+
+      return SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: ElevatedButton(
+          onPressed: canSubscribe
+              ? () {
+            final selectedPlan = controller.plans.firstWhere(
+                  (p) => p.id == controller.selectedPlanId.value,
+            );
+            controller.subscribeToPlan(selectedPlan);
+          }
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF7B61FF),
+            disabledBackgroundColor:
+            const Color(0xFF7B61FF).withOpacity(0.4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: controller.isProcessing.value
+              ? const SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor:
+              AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          )
+              : Text(
+            isPayPalSelected
+                ? 'PayPal Coming Soon'
+                : 'Subscribe Now',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (controller.selectedPaymentMethod.value == method)
-              const Icon(Icons.check_circle, color: Color(0xFF7B61FF), size: 16),
-            if (controller.selectedPaymentMethod.value == method)
-              const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: controller.selectedPaymentMethod.value == method
-                    ? const Color(0xFF7B61FF)
-                    : Colors.white70,
-                fontSize: 14,
-                fontWeight: controller.selectedPaymentMethod.value == method
-                    ? FontWeight.w600
-                    : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ));
+      );
+    });
   }
 
-  Widget _buildPlanCard(
-      SubscriptionPlan plan,
-      SubscriptionController controller,
-      bool isPremium,
-      bool isSelected,
-      bool isCurrentPlan,
-      ) {
-    final isFree = plan.price == 0;
-
+  // ─────────────────────────────────────────────────────────────────────────
+  // Payment method section
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildPaymentSection(SubscriptionController controller) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF131929),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Most Popular Badge (positioned above the card)
-          if (isPremium && !isCurrentPlan)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Center(
+          const Text(
+            'Select Payment Method',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              // Stripe
+              Expanded(
+                child: _buildPaymentMethodCard(
+                  method: 'stripe',
+                  icon: Icons.credit_card_rounded,
+                  label: 'Stripe',
+                  isComingSoon: false,
+                  controller: controller,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // PayPal — Coming Soon
+              Expanded(
+                child: _buildPaymentMethodCard(
+                  method: 'paypal',
+                  icon: Icons.account_balance_wallet_rounded,
+                  label: 'PayPal',
+                  isComingSoon: true,
+                  controller: controller,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodCard({
+    required String method,
+    required IconData icon,
+    required String label,
+    required bool isComingSoon,
+    required SubscriptionController controller,
+  }) {
+    return Obx(() {
+      final bool isSelected =
+          controller.selectedPaymentMethod.value == method;
+
+      return GestureDetector(
+        onTap: () => controller.setPaymentMethod(method),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding:
+          const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected && !isComingSoon
+                ? const Color(0xFF7B61FF).withOpacity(0.15)
+                : isSelected && isComingSoon
+                ? Colors.orange.withOpacity(0.08)
+                : const Color(0xFF1E2538),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected && !isComingSoon
+                  ? const Color(0xFF7B61FF)
+                  : isSelected && isComingSoon
+                  ? Colors.orange.withOpacity(0.6)
+                  : Colors.white.withOpacity(0.1),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: isComingSoon
+                        ? Colors.white38
+                        : isSelected
+                        ? const Color(0xFF7B61FF)
+                        : Colors.white70,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: isComingSoon
+                          ? Colors.white38
+                          : isSelected
+                          ? const Color(0xFF7B61FF)
+                          : Colors.white70,
+                      fontSize: 13,
+                      fontWeight: isSelected && !isComingSoon
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              if (isComingSoon)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: Colors.orange.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Text(
+                    'Coming Soon',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                )
+              else if (isSelected)
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF7B61FF),
+                  size: 14,
+                )
+              else
+                const SizedBox(height: 14),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Plans list — "Most Popular" badge sits between cards
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildPlansList(SubscriptionController controller) {
+    final plans = controller.plans;
+    if (plans.isEmpty) return const SizedBox.shrink();
+
+    return Obx(() {
+      final List<Widget> items = [];
+
+      for (int i = 0; i < plans.length; i++) {
+        final plan = plans[i];
+        final bool isPremium =
+            plan.name.toLowerCase().contains('premium') ||
+                plan.name.toLowerCase().contains('pro');
+        final bool isCurrentPlan = controller.isCurrentPlan(plan.name);
+        final bool isSelected =
+            controller.selectedPlanId.value == plan.id || isCurrentPlan;
+        final bool isFree = plan.price == 0;
+
+        items.add(
+          _buildPlanCard(
+            plan: plan,
+            controller: controller,
+            isPremium: isPremium,
+            isSelected: isSelected,
+            isCurrentPlan: isCurrentPlan,
+            isFree: isFree,
+          ),
+        );
+
+        if (i < plans.length - 1) {
+          final nextPlan = plans[i + 1];
+          final bool nextIsPremium =
+              nextPlan.name.toLowerCase().contains('premium') ||
+                  nextPlan.name.toLowerCase().contains('pro');
+          final bool nextIsCurrentPlan =
+          controller.isCurrentPlan(nextPlan.name);
+
+          if (nextIsPremium && !nextIsCurrentPlan) {
+            // "Most Popular" pill between the two cards
+            items.add(
+              Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF7B61FF),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
                     'Most Popular',
@@ -964,160 +450,404 @@ class SubscriptionScreen extends StatelessWidget {
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
               ),
+            );
+          } else {
+            items.add(const SizedBox(height: 12));
+          }
+        }
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: items,
+      );
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Individual plan card
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildPlanCard({
+    required SubscriptionPlan plan,
+    required SubscriptionController controller,
+    required bool isPremium,
+    required bool isSelected,
+    required bool isCurrentPlan,
+    required bool isFree,
+  }) {
+    final List<String> includedFeatures = plan.description;
+
+    // Excluded features only shown on the free/basic plan
+    final List<String> excludedFeatures = isFree
+        ? [
+      'Offline downloads',
+      'Premium sounds',
+      'Sleep timer',
+      'Ad-free experience',
+    ]
+        : [];
+
+    return GestureDetector(
+      onTap: () {
+        if (!isCurrentPlan) controller.selectPlan(plan.id);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF131929),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected || isCurrentPlan
+                ? const Color(0xFF7B61FF)
+                : Colors.white.withOpacity(0.08),
+            width: isSelected || isCurrentPlan ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Plan name + radio button ─────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  plan.name,
+                  style: const TextStyle(
+                    color: Color(0xFF9AA4B2),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    if (!isCurrentPlan) controller.selectPlan(plan.id);
+                  },
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isCurrentPlan || isSelected
+                            ? const Color(0xFF7B61FF)
+                            : Colors.white.withOpacity(0.35),
+                        width: 2,
+                      ),
+                      color: isCurrentPlan
+                          ? const Color(0xFF7B61FF)
+                          : Colors.transparent,
+                    ),
+                    child: isCurrentPlan
+                        ? const Icon(Icons.check,
+                        color: Colors.white, size: 16)
+                        : null,
+                  ),
+                ),
+              ],
             ),
 
-          // Plan Card
-          GestureDetector(
-            onTap: () {
-              if (!isCurrentPlan) {
-                controller.selectPlan(plan.id);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF131929),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected || isCurrentPlan
-                      ? const Color(0xFF7B61FF)
-                      : Colors.white.withOpacity(0.06),
-                  width: isSelected || isCurrentPlan ? 2 : 1,
+            const SizedBox(height: 6),
+
+            // ── Price ────────────────────────────────────────────
+            Text(
+              isFree ? 'Free' : plan.formattedPrice,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+            ),
+            if (!isFree)
+              Text(
+                plan.intervalText,
+                style: const TextStyle(
+                  color: Color(0xFF9AA4B2),
+                  fontSize: 13,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header: Plan Name + Radio Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        plan.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      // Radio Button - ONLY current plan shows checkmark
-                      GestureDetector(
-                        onTap: () {
-                          if (!isCurrentPlan) {
-                            controller.selectPlan(plan.id);
-                          }
-                        },
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isCurrentPlan
-                                  ? const Color(0xFF7B61FF)
-                                  : (isSelected
-                                  ? const Color(0xFF7B61FF)
-                                  : Colors.white.withOpacity(0.3)),
-                              width: 2,
-                            ),
-                            color: isCurrentPlan
-                                ? const Color(0xFF7B61FF)  // ✅ Fill only for purchased
-                                : Colors.transparent,       // ❌ No fill for others
-                          ),
-                          child: isCurrentPlan
-                              ? const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 16,
-                          )
-                              : null,  // ❌ No checkmark for other plans
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
 
-                  // Price
-                  Text(
-                    isFree ? 'Free' : plan.formattedPrice,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isFree ? 28 : 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (!isFree)
-                    Text(
-                      plan.intervalText,
-                      style: const TextStyle(
-                        color: Color(0xFF9AA4B2),
-                        fontSize: 14,
-                      ),
-                    ),
+            const SizedBox(height: 20),
+            const Divider(color: Color(0xFF1E293B), height: 1),
+            const SizedBox(height: 16),
 
-                  const SizedBox(height: 20),
-                  const Divider(color: Color(0xFF1E293B), height: 1),
-                  const SizedBox(height: 20),
+            // ── Included features (✓) ────────────────────────────
+            ...includedFeatures.map(
+                  (f) => _featureRow(label: f, included: true),
+            ),
 
-                  // ✅ Features from API response (plan.description)
-                  ...plan.description.map((feature) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check,  // ✅ All description items are included features
-                            size: 18,
-                            color: Color(0xFF7B61FF),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              feature,  // ✅ Directly from API: "Unlimited songs", "3 max download"
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+            // ── Excluded features (✗) — free plan only ───────────
+            ...excludedFeatures.map(
+                  (f) => _featureRow(label: f, included: false),
+            ),
 
-                  // ✅ Show download limit if > 0 (from API)
-                  if (plan.downloadLimit > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.cloud_download_outlined,
-                            size: 18,
-                            color: Color(0xFF7B61FF),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Up to ${plan.downloadLimit} downloads',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Feature row helper
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _featureRow({
+    required String label,
+    required bool included,
+    IconData? icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(
+            included ? (icon ?? Icons.check) : Icons.close,
+            size: 18,
+            color: included
+                ? const Color(0xFF7B61FF)
+                : const Color(0xFF3D4A5C),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color:
+                included ? Colors.white : const Color(0xFF3D4A5C),
+                fontSize: 14,
+                decoration: included
+                    ? TextDecoration.none
+                    : TextDecoration.lineThrough,
+                decorationColor: const Color(0xFF3D4A5C),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class StripeCheckoutScreen extends StatefulWidget {
+  final String checkoutUrl;
+  final String planName;
+  final VoidCallback onSuccess;
+  final VoidCallback onCancel;
+
+  const StripeCheckoutScreen({
+    super.key,
+    required this.checkoutUrl,
+    required this.planName,
+    required this.onSuccess,
+    required this.onCancel,
+  });
+
+  @override
+  State<StripeCheckoutScreen> createState() => _StripeCheckoutScreenState();
+}
+
+class _StripeCheckoutScreenState extends State<StripeCheckoutScreen> {
+  late final WebViewController _webViewController;
+  bool _isLoading = true;
+  bool _hasHandledRedirect = false;
+
+  // ── Update these to match your backend's configured redirect URLs ──────
+  // These patterns are matched against the URL the WebView navigates to.
+  static const String _successUrlPattern = '/payment/success';
+  static const String _cancelUrlPattern  = '/payment/cancel';
+
+  // Stripe's own cancel link inside the hosted page
+  static const String _stripeReturnPattern = 'return_url';
+
+  @override
+  void initState() {
+    super.initState();
+    _initWebView();
+  }
+
+  void _initWebView() {
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFF0A0E1A))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) {
+            if (mounted) setState(() => _isLoading = true);
+          },
+          onPageFinished: (_) {
+            if (mounted) setState(() => _isLoading = false);
+          },
+          onWebResourceError: (WebResourceError error) {
+            debugPrint('❌ WebView error: ${error.description}');
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            final url = request.url;
+            debugPrint('🌐 WebView navigating to: $url');
+
+            if (_hasHandledRedirect) return NavigationDecision.prevent;
+
+            // ── Success redirect ──────────────────────────────────
+            if (url.contains(_successUrlPattern)) {
+              _hasHandledRedirect = true;
+              debugPrint('✅ Stripe payment success detected');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                widget.onSuccess();
+              });
+              return NavigationDecision.prevent;
+            }
+
+            // ── Cancel redirect ───────────────────────────────────
+            if (url.contains(_cancelUrlPattern)) {
+              _hasHandledRedirect = true;
+              debugPrint('🚫 Stripe payment cancelled detected');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                widget.onCancel();
+              });
+              return NavigationDecision.prevent;
+            }
+
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.checkoutUrl));
+  }
+
+  Future<bool> _onWillPop() async {
+    // If WebView can go back within Stripe's flow, go back inside it.
+    if (await _webViewController.canGoBack()) {
+      await _webViewController.goBack();
+      return false;
+    }
+    // Otherwise ask user to confirm leaving checkout
+    final shouldLeave = await _showExitDialog();
+    if (shouldLeave) widget.onCancel();
+    return shouldLeave;
+  }
+
+  Future<bool> _showExitDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF131929),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Leave Checkout?',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Your payment has not been completed. Are you sure you want to leave?',
+          style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Stay',
+              style: TextStyle(color: Color(0xFF7B61FF)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Leave',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    ) ??
+        false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0A0E1A),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0A0E1A),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () async {
+              final shouldLeave = await _showExitDialog();
+              if (shouldLeave && context.mounted) {
+                widget.onCancel();
+              }
+            },
+          ),
+          title: Column(
+            children: [
+              Text(
+                widget.planName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Text(
+                'Secure Checkout',
+                style: TextStyle(
+                  color: Color(0xFF9AA4B2),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          centerTitle: true,
+          actions: [
+            // Lock icon to indicate secure page
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Icon(Icons.lock_outline, color: Color(0xFF7B61FF), size: 20),
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            // ── WebView ───────────────────────────────────────────
+            WebViewWidget(controller: _webViewController),
+
+            // ── Loading overlay ───────────────────────────────────
+            if (_isLoading)
+              Container(
+                color: const Color(0xFF0A0E1A),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF7B61FF)),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Loading secure checkout...',
+                        style: TextStyle(
+                          color: Color(0xFF9AA4B2),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
