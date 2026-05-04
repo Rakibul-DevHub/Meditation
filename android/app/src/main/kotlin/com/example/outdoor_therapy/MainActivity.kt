@@ -1,5 +1,15 @@
+//package com.example.outdoor_therapy
+//
+//import io.flutter.embedding.android.FlutterActivity
+//
+//class MainActivity : FlutterActivity()
+
+
+
+
 package com.example.outdoor_therapy
 
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+
+class MainActivity : AudioServiceActivity()

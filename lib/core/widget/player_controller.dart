@@ -3,19 +3,23 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:audio_service/audio_service.dart';
 import '../network/app_url.dart';
 import '../network/network_caller_dio.dart';
 import '../network/secure_storage_service.dart';
 import '../../model/category_model.dart';
+import '../../main.dart'; // for audioHandler global
 
 enum PlaybackMode { continuous, shuffle, repeatOne }
 
 class PlayerController extends GetxController {
-  final AudioPlayer player = AudioPlayer();
+  // Use the shared AudioPlayer owned by the global audioHandler
+  AudioPlayer get player => audioHandler.player;
+
   final NetworkCallerDio _networkCaller = NetworkCallerDio();
   final SecureStorageService _storage = SecureStorageService.instance;
 
-  // Reactive State
+  // ── Reactive State ────────────────────────────────────────────────────────
   final RxBool isPlaying = false.obs;
   final Rx<Duration> position = Duration.zero.obs;
   final Rx<Duration> duration = Duration.zero.obs;
@@ -27,11 +31,14 @@ class PlayerController extends GetxController {
   final RxList<TrackModel> playlist = <TrackModel>[].obs;
   final RxInt currentIndex = 0.obs;
 
-  // Single button playback mode
+  // Playback mode
   final Rx<PlaybackMode> playbackMode = PlaybackMode.continuous.obs;
 
   Timer? _historyTimer;
   ConcatenatingAudioSource? _playlistSource;
+
+  // Store subscriptions so we can cancel them cleanly on dispose
+  final List<StreamSubscription> _subscriptions = [];
 
   @override
   void onInit() {
@@ -39,50 +46,114 @@ class PlayerController extends GetxController {
     _initPlayerListeners();
   }
 
+  // ── Stream Listeners ──────────────────────────────────────────────────────
+
   void _initPlayerListeners() {
-    player.playerStateStream.listen((state) {
-      isPlaying.value = state.playing;
-      if (state.processingState == ProcessingState.completed) {
-        _savePlayHistory(force: true);
-      }
-    });
+    // ── 1. Playing / paused / completed ──────────────────────────────────
+    // Derive isPlaying from both the playing flag AND the processing state so
+    // the UI button flips correctly the moment the OS notification is tapped.
+    _subscriptions.add(
+      player.playerStateStream.listen((state) {
+        final playing = state.playing &&
+            state.processingState != ProcessingState.completed &&
+            state.processingState != ProcessingState.idle;
+        isPlaying.value = playing;
 
-    player.positionStream.listen((p) => position.value = p);
-    player.durationStream.listen((d) => duration.value = d ?? Duration.zero);
+        // Auto-save history when a track finishes naturally
+        if (state.processingState == ProcessingState.completed) {
+          _savePlayHistory(force: true);
+        }
+      }),
+    );
 
-    player.currentIndexStream.listen((index) {
-      if (index != null && playlist.isNotEmpty) {
-        currentIndex.value = index;
-        currentTrack.value = playlist[index];
-      }
-    });
+    // ── 2. Also react to audio_service playback state so the lock-screen
+    //       play/pause is always in sync with our RxBool ─────────────────
+    _subscriptions.add(
+      audioHandler.playbackState.listen((state) {
+        final playing = state.playing &&
+            !state.processingState.name.contains('idle') &&
+            !state.processingState.name.contains('completed');
+        isPlaying.value = playing;
+
+        // Mirror loading/buffering state
+        isLoading.value =
+            state.processingState == AudioProcessingState.loading ||
+                state.processingState == AudioProcessingState.buffering;
+      }),
+    );
+
+    // ── 3. Seek position ──────────────────────────────────────────────────
+    _subscriptions.add(
+      player.positionStream.listen((p) => position.value = p),
+    );
+
+    // ── 4. Track duration ─────────────────────────────────────────────────
+    _subscriptions.add(
+      player.durationStream.listen((d) => duration.value = d ?? Duration.zero),
+    );
+
+    // ── 5. Current index / track change ───────────────────────────────────
+    _subscriptions.add(
+      player.currentIndexStream.listen((index) {
+        if (index != null &&
+            playlist.isNotEmpty &&
+            index < playlist.length) {
+          currentIndex.value = index;
+          currentTrack.value = playlist[index];
+
+          // Keep the OS notification / lock screen artwork up-to-date
+          audioHandler.mediaItem.add(_trackToMediaItem(playlist[index]));
+        }
+      }),
+    );
   }
 
   @override
   void onClose() {
     _savePlayHistory(force: true);
     _historyTimer?.cancel();
-    player.dispose();
+    for (final s in _subscriptions) {
+      s.cancel();
+    }
+    _subscriptions.clear();
+    // Do NOT dispose player — it belongs to audioHandler (app lifetime)
     super.onClose();
   }
 
-  /// Build an AudioSource from a TrackModel.
-  /// Handles both remote URLs (http/https) and local file paths.
+  // ── MediaItem helper ──────────────────────────────────────────────────────
+
+  MediaItem _trackToMediaItem(TrackModel track) {
+    return MediaItem(
+      id: track.id ?? '',
+      title: track.title ?? 'Unknown Track',
+      artist: track.categoryName ?? '',
+      artUri: (track.coverImageUrl != null && track.coverImageUrl!.isNotEmpty)
+          ? Uri.parse(track.coverImageUrl!)
+          : null,
+      duration: track.durationSeconds != null
+          ? Duration(seconds: track.durationSeconds!)
+          : null,
+    );
+  }
+
+  // ── AudioSource builder ───────────────────────────────────────────────────
+
   AudioSource _buildAudioSource(TrackModel track) {
     final url = track.audioUrl ?? '';
-
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      // Remote stream
       return AudioSource.uri(Uri.parse(url));
     } else {
-      // Local file path — use file:// URI
       final file = File(url);
       debugPrint('🎵 Playing local file: ${file.path}');
       return AudioSource.uri(Uri.file(file.path));
     }
   }
 
+  // ── Core playback ─────────────────────────────────────────────────────────
+
   Future<void> setPlaylist(List<TrackModel> tracks, {int initialIndex = 0}) async {
+    if (tracks.isEmpty) return;
+
     try {
       isLoading.value = true;
       showMiniPlayer.value = true;
@@ -90,6 +161,14 @@ class PlayerController extends GetxController {
       playlist.assignAll(tracks);
       currentIndex.value = initialIndex;
       currentTrack.value = tracks[initialIndex];
+
+      // Push full queue to audio_service → enables lock screen skip buttons
+      await audioHandler.updateQueue(
+        tracks.map(_trackToMediaItem).toList(),
+      );
+
+      // Show artwork + title in notification immediately
+      audioHandler.mediaItem.add(_trackToMediaItem(tracks[initialIndex]));
 
       _playlistSource = ConcatenatingAudioSource(
         children: tracks.map(_buildAudioSource).toList(),
@@ -103,10 +182,14 @@ class PlayerController extends GetxController {
         ),
       );
 
-      player.play();
+      // Play via handler so OS notification shows correct state.
+      // isLoading will be set to false by the playbackState stream listener
+      // once buffering completes — no need to set it here.
+      await audioHandler.play();
       _startHistoryTimer();
     } catch (e) {
       debugPrint('❌ Error setting playlist: $e');
+      isLoading.value = false; // Ensure loading resets on error
       Get.snackbar(
         'Playback Error',
         'Could not play this track. Please try again.',
@@ -114,59 +197,72 @@ class PlayerController extends GetxController {
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
       );
-    } finally {
-      isLoading.value = false;
     }
   }
 
+  // ── Playback mode ─────────────────────────────────────────────────────────
+
   void cyclePlaybackMode() {
-    if (playbackMode.value == PlaybackMode.continuous) {
-      playbackMode.value = PlaybackMode.shuffle;
-      player.setShuffleModeEnabled(true);
-      player.setLoopMode(LoopMode.all);
-    } else if (playbackMode.value == PlaybackMode.shuffle) {
-      playbackMode.value = PlaybackMode.repeatOne;
-      player.setShuffleModeEnabled(false);
-      player.setLoopMode(LoopMode.one);
-    } else {
-      playbackMode.value = PlaybackMode.continuous;
-      player.setShuffleModeEnabled(false);
-      player.setLoopMode(LoopMode.all);
+    switch (playbackMode.value) {
+      case PlaybackMode.continuous:
+        playbackMode.value = PlaybackMode.shuffle;
+        audioHandler.setShuffleMode(AudioServiceShuffleMode.all);
+        audioHandler.setRepeatMode(AudioServiceRepeatMode.all);
+        break;
+      case PlaybackMode.shuffle:
+        playbackMode.value = PlaybackMode.repeatOne;
+        audioHandler.setShuffleMode(AudioServiceShuffleMode.none);
+        audioHandler.setRepeatMode(AudioServiceRepeatMode.one);
+        break;
+      case PlaybackMode.repeatOne:
+        playbackMode.value = PlaybackMode.continuous;
+        audioHandler.setShuffleMode(AudioServiceShuffleMode.none);
+        audioHandler.setRepeatMode(AudioServiceRepeatMode.all);
+        break;
     }
   }
+
+  // ── Transport controls ────────────────────────────────────────────────────
 
   void togglePlayPause() {
     if (player.playing) {
-      player.pause();
+      audioHandler.pause();
       _savePlayHistory(force: true);
     } else {
-      player.play();
+      audioHandler.play();
     }
   }
 
   void playNext() {
-    if (player.hasNext) player.seekToNext();
+    if (player.hasNext) audioHandler.skipToNext();
   }
 
   void playPrevious() {
-    if (player.hasPrevious) player.seekToPrevious();
+    if (player.hasPrevious) audioHandler.skipToPrevious();
   }
 
-  void seek(Duration pos) => player.seek(pos);
+  void seek(Duration pos) => audioHandler.seek(pos);
 
   void stopAndHidePlayer() {
-    player.stop();
+    audioHandler.stop();
     showMiniPlayer.value = false;
     currentTrack.value = null;
     playlist.clear();
     _historyTimer?.cancel();
+    isPlaying.value = false;
+    isLoading.value = false;
+    position.value = Duration.zero;
+    duration.value = Duration.zero;
   }
+
+  // ── Play history ──────────────────────────────────────────────────────────
 
   Future<void> _savePlayHistory({bool force = false}) async {
     final track = currentTrack.value;
-    if (track == null || track.id == null || (!player.playing && !force)) return;
+    if (track == null || track.id == null) return;
+    if (!player.playing && !force) return;
 
-    // Don't save history for locally-downloaded files (no server record needed)
+    // Don't save history for locally-downloaded files
     final url = track.audioUrl ?? '';
     if (!url.startsWith('http://') && !url.startsWith('https://')) return;
 
