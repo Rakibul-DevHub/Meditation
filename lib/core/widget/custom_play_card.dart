@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:outdoor_therapy/features/views/now_playing/now_playing_screen.dart';
 import 'package:outdoor_therapy/model/category_model.dart';
-import 'package:outdoor_therapy/core/widget/player_controller.dart';
+import 'package:outdoor_therapy/features/views/now_playing/player_controller.dart';
 
 class CustomPlayCard extends StatelessWidget {
   final TrackModel track;

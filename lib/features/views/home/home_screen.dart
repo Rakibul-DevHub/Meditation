@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/app_colors.dart';
-import '../../../core/widget/player_controller.dart';
+import '../now_playing/player_controller.dart';
 import '../../../model/category_model.dart';
 import '../../../features/views/now_playing/now_playing_screen.dart';
 import 'home_screen_controller.dart';

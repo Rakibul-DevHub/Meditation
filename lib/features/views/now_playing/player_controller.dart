@@ -1,14 +1,15 @@
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
-import '../network/app_url.dart';
-import '../network/network_caller_dio.dart';
-import '../network/secure_storage_service.dart';
-import '../../model/category_model.dart';
-import '../../main.dart'; // for audioHandler global
+import '../../../core/network/app_url.dart';
+import '../../../core/network/network_caller_dio.dart';
+import '../../../core/network/secure_storage_service.dart';
+import '../../../model/category_model.dart';
+import '../../../main.dart'; // for audioHandler global
 
 enum PlaybackMode { continuous, shuffle, repeatOne }
 

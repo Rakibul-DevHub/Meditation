@@ -6,7 +6,7 @@ import 'package:outdoor_therapy/features/views/download/download_page.dart';
 import 'package:outdoor_therapy/features/views/favorite/favorite_screen.dart';
 import 'package:outdoor_therapy/features/views/menu/menu_screen.dart';
 import 'package:outdoor_therapy/core/widget/custom_play_card.dart';
-import 'package:outdoor_therapy/core/widget/player_controller.dart';
+import 'package:outdoor_therapy/features/views/now_playing/player_controller.dart';
 import 'package:outdoor_therapy/features/views/browse/controller/browse_controller.dart';
 import '../../../core/app_colors.dart';
 import '../home/home_screen.dart';

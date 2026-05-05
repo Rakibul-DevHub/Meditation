@@ -12,7 +12,7 @@ import '../../../core/download_service.dart';
 import '../../../core/network/app_url.dart';
 import '../../../core/network/network_caller_dio.dart';
 import '../../../core/network/secure_storage_service.dart';
-import '../../../core/widget/player_controller.dart';
+import 'player_controller.dart';
 import '../../../model/category_model.dart';
 import '../menu/controller/menu_screen_controller.dart'; // Import MenuScreenController
 import '../download/download_controller.dart';
