@@ -24,6 +24,7 @@ Future<void> main() async {
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
       notificationColor: Color(0xff6366F1),
+
     ),
   );
 
