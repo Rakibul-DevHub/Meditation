@@ -34,8 +34,8 @@ class SignInScreenController extends GetxController {
   final RxBool isAppleSigningIn = false.obs;
   final RxBool isPasswordVisible = false.obs;
 
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController emailController = TextEditingController(text: 'user1@yopmail.com');
+  final TextEditingController passwordController = TextEditingController(text: 'Asdfasdf1');
 
   final RxString emailError = ''.obs;
   final RxString passwordError = ''.obs;
