@@ -1,3 +1,4 @@
+/**
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -817,6 +818,564 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                 const SizedBox(height: 24),
               ],
             ),
+          ),
+        );
+      }),
+    );
+  }
+}*/
+
+
+
+
+
+
+
+
+
+
+/// ===========================
+/// NOW PLAYING SCREEN
+/// OPTIMIZED + NULL SAFE
+/// ===========================
+
+import 'dart:async';
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import '../../../core/app_colors.dart';
+import '../../../core/download_service.dart';
+import '../../../core/network/app_url.dart';
+import '../../../core/network/network_caller_dio.dart';
+import '../../../core/network/secure_storage_service.dart';
+import '../../../model/category_model.dart';
+import '../../../model/favorite_response_model.dart';
+import '../download/download_controller.dart';
+import '../favorite/favorite_screen_controller.dart';
+import '../menu/controller/menu_screen_controller.dart';
+import 'player_controller.dart';
+
+class NowPlayingScreen extends StatefulWidget {
+  const NowPlayingScreen({super.key});
+
+  @override
+  State<NowPlayingScreen> createState() => _NowPlayingScreenState();
+}
+
+class _NowPlayingScreenState extends State<NowPlayingScreen> {
+  late final PlayerController _playerController;
+  late final DownloadService _downloadService;
+  late final FavoriteScreenController _favoriteController;
+  late final MenuScreenController _menuController;
+  late final DownloadController _downloadController;
+
+  final RxBool isFavorite = false.obs;
+  final RxBool isLoading = true.obs;
+
+  final RxMap<String, DownloadState> _localDownloadStates =
+      <String, DownloadState>{}.obs;
+
+  String _currentTrackId = '';
+
+  Timer? _sleepTimer;
+
+  final Dio _downloadDio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(minutes: 10),
+    ),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+
+    _playerController = Get.find<PlayerController>();
+    _downloadService = Get.find<DownloadService>();
+    _favoriteController = Get.find<FavoriteScreenController>();
+
+    _menuController = Get.isRegistered<MenuScreenController>()
+        ? Get.find<MenuScreenController>()
+        : Get.put(MenuScreenController());
+
+    _downloadController = Get.isRegistered<DownloadController>()
+        ? Get.find<DownloadController>()
+        : Get.put(DownloadController());
+
+    _listenTrackChanges();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
+  }
+
+  void _listenTrackChanges() {
+    ever(_playerController.currentTrack, (TrackModel? track) async {
+      if (track == null) return;
+
+      final trackId = track.id ?? '';
+
+      if (trackId != _currentTrackId) {
+        _currentTrackId = trackId;
+
+        await Future.wait([
+          _checkFavorite(trackId),
+          _checkDownload(trackId),
+        ]);
+      }
+    });
+  }
+
+  Future<void> _loadInitialData() async {
+    isLoading.value = true;
+
+    final track = _playerController.currentTrack.value;
+
+    if (track != null) {
+      final trackId = track.id ?? '';
+
+      _currentTrackId = trackId;
+
+      await Future.wait([
+        _checkFavorite(trackId),
+        _checkDownload(trackId),
+      ]);
+    }
+
+    isLoading.value = false;
+  }
+
+  Future<void> _checkFavorite(String trackId) async {
+    isFavorite.value =
+        _favoriteController.tracks.any((e) => (e.id ?? '') == trackId);
+  }
+
+  Future<void> _checkDownload(String trackId) async {
+    final exists = await _isTrackDownloaded(trackId);
+
+    if (exists) {
+      _localDownloadStates[trackId] = DownloadState(
+        trackId: trackId,
+        trackTitle: 'Downloaded',
+        coverImageUrl: '',
+        categoryName: '',
+        durationSeconds: 0,
+        status: DownloadStatus.completed,
+        progressPercent: 100,
+      );
+    } else {
+      _localDownloadStates.remove(trackId);
+    }
+  }
+
+  Future<bool> _isTrackDownloaded(String trackId) async {
+    final dir = await getApplicationDocumentsDirectory();
+
+    final file = File('${dir.path}/tracks/$trackId.mp3');
+
+    return file.exists();
+  }
+
+  Future<void> _toggleFavorite() async {
+    final track = _playerController.currentTrack.value;
+
+    if (track == null) return;
+
+    final trackId = track.id ?? '';
+
+    final oldValue = isFavorite.value;
+
+    isFavorite.value = !oldValue;
+
+    try {
+      final token = await SecureStorageService.instance.getAccessToken();
+
+      if (token == null) {
+        isFavorite.value = oldValue;
+        return;
+      }
+
+      final caller = NetworkCallerDio();
+
+      if (isFavorite.value) {
+        final res = await caller.postRequest(
+          AppUrl.addFavorites(trackId),
+          body: {},
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (!res.isSuccess) {
+          isFavorite.value = oldValue;
+        }
+      } else {
+        final res = await caller.postRequest(
+          AppUrl.removeFavorites(trackId),
+          body: {},
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (!res.isSuccess) {
+          isFavorite.value = oldValue;
+        }
+      }
+    } catch (_) {
+      isFavorite.value = oldValue;
+    }
+  }
+
+  Future<bool> _requestPermission() async {
+    if (Platform.isAndroid) {
+      if (await Permission.audio.isGranted) return true;
+
+      final r = await Permission.audio.request();
+
+      if (r.isGranted) return true;
+
+      return await Permission.storage.request().isGranted;
+    }
+
+    return true;
+  }
+
+  Future<void> _startDownload(String trackId, TrackModel track) async {
+    if (trackId.isEmpty) return;
+
+    if (!await _requestPermission()) return;
+
+    final cancelToken = CancelToken();
+
+    final state = DownloadState(
+      trackId: trackId,
+      trackTitle: track.title ?? 'Unknown',
+      coverImageUrl: track.coverImageUrl ?? '',
+      categoryName: track.categoryName ?? '',
+      durationSeconds: track.durationSeconds ?? 0,
+      status: DownloadStatus.downloading,
+      progressPercent: 0,
+      cancelToken: cancelToken,
+    );
+
+    _localDownloadStates[trackId] = state;
+
+    try {
+      final token = await SecureStorageService.instance.getAccessToken();
+
+      if (token == null) return;
+
+      final caller = NetworkCallerDio();
+
+      final response = await caller.postRequest(
+        AppUrl.downloadSounds(trackId),
+        body: {},
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      final url = response.jsonResponse?['data']?['downloadUrl'];
+
+      if (url == null) return;
+
+      final dir = await getApplicationDocumentsDirectory();
+
+      final trackDir = Directory('${dir.path}/tracks');
+
+      if (!await trackDir.exists()) {
+        await trackDir.create(recursive: true);
+      }
+
+      final path = '${trackDir.path}/$trackId.mp3';
+
+      await _downloadDio.download(
+        url,
+        path,
+        cancelToken: cancelToken,
+        onReceiveProgress: (received, total) {
+          if (total <= 0) return;
+
+          final percent = ((received / total) * 100).toInt();
+
+          _localDownloadStates[trackId] = state.copyWith(
+            progressPercent: percent,
+          );
+        },
+      );
+
+      _localDownloadStates[trackId] = state.copyWith(
+        status: DownloadStatus.completed,
+        progressPercent: 100,
+      );
+    } catch (_) {
+      _localDownloadStates[trackId] = state.copyWith(
+        status: DownloadStatus.failed,
+      );
+    }
+  }
+
+  String _format(Duration d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+
+    return '${two(d.inMinutes)}:${two(d.inSeconds.remainder(60))}';
+  }
+
+  Widget _buildDownloadButton(String trackId, TrackModel track) {
+    return Obx(() {
+      final state = _localDownloadStates[trackId];
+
+      if (state == null) {
+        return IconButton(
+          onPressed: () => _startDownload(trackId, track),
+          icon: const Icon(
+            Icons.download_rounded,
+            color: Colors.white,
+          ),
+        );
+      }
+
+      switch (state.status) {
+        case DownloadStatus.downloading:
+          return SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              value: state.progressPercent / 100,
+              color: Colors.white,
+            ),
+          );
+
+        case DownloadStatus.completed:
+          return const Icon(
+            Icons.check_circle,
+            color: Colors.green,
+          );
+
+        case DownloadStatus.failed:
+          return IconButton(
+            onPressed: () => _startDownload(trackId, track),
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.red,
+            ),
+          );
+
+        default:
+          return const SizedBox.shrink();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sleepTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xff020617),
+
+      appBar: AppBar(
+        backgroundColor: const Color(0xff020617),
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'Now Playing',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+
+      body: Obx(() {
+        if (isLoading.value) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        final track = _playerController.currentTrack.value;
+
+        if (track == null) {
+          return const Center(
+            child: Text(
+              'No Track',
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        }
+
+        final trackId = track.id ?? '';
+
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+
+              Hero(
+                tag: 'track-image-$trackId',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: CachedNetworkImage(
+                    imageUrl: track.coverImageUrl ?? '',
+                    width: double.infinity,
+                    height: 320,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      color: Colors.white10,
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      color: Colors.white10,
+                      child: const Icon(
+                        Icons.music_note,
+                        color: Colors.white,
+                        size: 50,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          track.title ?? 'Unknown',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        Text(
+                          track.categoryName ?? '',
+                          style: const TextStyle(
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Obx(() {
+                    return IconButton(
+                      onPressed: _toggleFavorite,
+                      icon: Icon(
+                        isFavorite.value
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: isFavorite.value
+                            ? Colors.purpleAccent
+                            : Colors.white,
+                      ),
+                    );
+                  }),
+
+                  _buildDownloadButton(trackId, track),
+                ],
+              ),
+
+              const SizedBox(height: 40),
+
+              Obx(() {
+                return Slider(
+                  value: _playerController.position.value.inSeconds
+                      .toDouble()
+                      .clamp(
+                    0,
+                    _playerController.duration.value.inSeconds.toDouble(),
+                  ),
+                  max: _playerController.duration.value.inSeconds > 0
+                      ? _playerController.duration.value.inSeconds.toDouble()
+                      : 1,
+                  onChanged: (v) {
+                    _playerController.seek(
+                      Duration(seconds: v.toInt()),
+                    );
+                  },
+                );
+              }),
+
+              Obx(() {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _format(_playerController.position.value),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      _format(_playerController.duration.value),
+                      style: const TextStyle(color: Colors.white54),
+                    ),
+                  ],
+                );
+              }),
+
+              const Spacer(),
+
+              Obx(() {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      onPressed: _playerController.playPrevious,
+                      icon: const Icon(
+                        Icons.skip_previous_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    ),
+
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: _playerController.togglePlayPause,
+                        icon: Icon(
+                          _playerController.isPlaying.value
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          color: Colors.black,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+
+                    IconButton(
+                      onPressed: _playerController.playNext,
+                      icon: const Icon(
+                        Icons.skip_next_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    ),
+                  ],
+                );
+              }),
+
+              const SizedBox(height: 40),
+            ],
           ),
         );
       }),
