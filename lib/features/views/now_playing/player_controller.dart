@@ -139,10 +139,13 @@ class PlayerController extends GetxController {
 
   // ── AudioSource builder ───────────────────────────────────────────────────
 
-  AudioSource _buildAudioSource(TrackModel track) {
+  AudioSource _buildAudioSource(TrackModel track, {String? token}) {
     final url = track.audioUrl ?? '';
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      return AudioSource.uri(Uri.parse(url));
+      return AudioSource.uri(
+        Uri.parse(url),
+        headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+      );
     } else {
       final file = File(url);
       debugPrint('🎵 Playing local file: ${file.path}');
@@ -155,24 +158,55 @@ class PlayerController extends GetxController {
   Future<void> setPlaylist(List<TrackModel> tracks, {int initialIndex = 0}) async {
     if (tracks.isEmpty) return;
 
+    // 🚀 1. UPDATE STATE IMMEDIATELY
+    // This prevents "No track selected" or UI flickering when the screen opens.
+    playlist.assignAll(tracks);
+    currentIndex.value = initialIndex;
+    currentTrack.value = tracks[initialIndex];
+    showMiniPlayer.value = true;
+    isLoading.value = true;
+
     try {
-      isLoading.value = true;
-      showMiniPlayer.value = true;
+      final token = await _storage.getAccessToken();
 
-      playlist.assignAll(tracks);
-      currentIndex.value = initialIndex;
-      currentTrack.value = tracks[initialIndex];
+      // 🚀 2. HIT THE playTrack API IN THE BACKGROUND
+      // We don't await this because it takes 3+ seconds and we want the music to start NOW.
+      // This satisfies the backend requirement to "hit the API when I tap".
+      if (currentTrack.value?.id != null) {
+        final String trackApiUrl = AppUrl.playTrack(currentTrack.value!.id!);
+        debugPrint('🎵 [PLAYBACK] Registering play event (BG): $trackApiUrl');
+        
+        // Fire and forget (don't await)
+        _networkCaller.getRequest(
+          trackApiUrl,
+          headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+        ).then((response) {
+          if (response.isSuccess && response.jsonResponse != null) {
+            final data = response.jsonResponse!['data'];
+            if (data != null) {
+              // Optionally update metadata if something changed (like a new URL)
+              final freshTrack = TrackModel.fromJson(data);
+              // Only update if the user hasn't already switched tracks
+              if (currentTrack.value?.id == freshTrack.id) {
+                currentTrack.value = freshTrack;
+                playlist[initialIndex] = freshTrack;
+              }
+            }
+          }
+        }).catchError((e) => debugPrint('⚠️ Background track refresh failed: $e'));
+      }
 
-      // Push full queue to audio_service → enables lock screen skip buttons
+      // 🚀 3. PREPARE PLAYER IMMEDIATELY
+      // Push queue to audio_service
       await audioHandler.updateQueue(
         tracks.map(_trackToMediaItem).toList(),
       );
 
-      // Show artwork + title in notification immediately
+      // Show artwork in notification
       audioHandler.mediaItem.add(_trackToMediaItem(tracks[initialIndex]));
 
       _playlistSource = ConcatenatingAudioSource(
-        children: tracks.map(_buildAudioSource).toList(),
+        children: tracks.map((t) => _buildAudioSource(t, token: token)).toList(),
       );
 
       await player.setAudioSource(
@@ -183,14 +217,13 @@ class PlayerController extends GetxController {
         ),
       );
 
-      // Play via handler so OS notification shows correct state.
-      // isLoading will be set to false by the playbackState stream listener
-      // once buffering completes — no need to set it here.
       await audioHandler.play();
       _startHistoryTimer();
+      
     } catch (e) {
       debugPrint('❌ Error setting playlist: $e');
-      isLoading.value = false; // Ensure loading resets on error
+      isLoading.value = false;
+      
       Get.snackbar(
         'Playback Error',
         'Could not play this track. Please try again.',
@@ -198,8 +231,19 @@ class PlayerController extends GetxController {
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
       );
+    } finally {
+      // The playerStateStream listener usually handles isLoading, 
+      // but we add a safety timeout here.
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (player.processingState == ProcessingState.ready) {
+          isLoading.value = false;
+        }
+      });
     }
   }
+
+  // Removed _refreshPlaylistInBackground to prevent multiple backend hits
+
 
   // ── Playback mode ─────────────────────────────────────────────────────────
 

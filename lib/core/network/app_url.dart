@@ -16,7 +16,8 @@ class AppUrl {
   static String featuredSounds = '$baseUrl/app/tracks?isFeatured=true';
   static String sleepTonight = '$baseUrl/app/tracks?isSleepTonight=true';
   static String popularListening = '$baseUrl/app/tracks/popular';
-  static String trackDetails(String id) => '$baseUrl/app/tracks/$id';
+  // static String trackDetails(String id) => '$baseUrl/app/tracks/$id';
+  static String playTrack(String id) => '$baseUrl/app/tracks/$id';
   static const String playHistory = '$baseUrl/app/play-history';
   static const String getFavorite = '$baseUrl/app/favourites';
   static String addFavorites (String id) => '$baseUrl/app/favourites/$id';
