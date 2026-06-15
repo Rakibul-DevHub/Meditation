@@ -1,9 +1,8 @@
+import 'package:get/get.dart';
+import 'splash_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:get/get.dart';
 import 'package:outdoor_therapy/core/app_colors.dart';
-
-import 'splash_controller.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

@@ -29,7 +29,7 @@
         android:requestLegacyExternalStorage="true"
         android:label="outdoor_therapy"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="true">
 
 
