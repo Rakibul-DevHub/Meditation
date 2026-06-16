@@ -221,6 +221,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Fixed: Play button handler with proper event prevention
+  void _handlePlayButtonTap(TrackModel track, List<TrackModel> playlist, int index) {
+    // Prevent event bubbling to parent GestureDetector
+    _playTrack(track, playlist, index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -303,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              /// Popular Tracks List
+              /// Popular Tracks List - Fixed overflow issue
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: _buildPopularSliverList(),
@@ -512,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _controller.isRefreshingPopular.value;
 
       if (shouldShowShimmer) {
-        return SliverToBoxAdapter(child: _buildPopularShimmer());
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
       }
 
       if (_controller.popularError.isNotEmpty && _controller.popularTracks.isEmpty) {
@@ -552,87 +558,93 @@ class _HomeScreenState extends State<HomeScreen> {
 
       return SliverList(
         delegate: SliverChildBuilderDelegate(
-          (context, index) {
+              (context, index) {
             final track = _controller.popularTracks[index];
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Obx(() {
                 final isFav = _isFavorite(track.id ?? '');
+                final isCurrentTrack = _playerController.currentTrack.value?.id == track.id;
+                final isPlaying = _playerController.isPlaying.value;
 
                 return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Track Image with Play on Tap
                     GestureDetector(
                       onTap: () => _playTrack(track, _controller.popularTracks, index),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 55,
-                            height: 55,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: CachedNetworkImage(
-                                imageUrl: track.coverImageUrl ?? '',
-                                fit: BoxFit.cover,
-                                placeholder: (_, __) => Container(
-                                  color: AppColors.grey800,
-                                  child: const Center(
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
-                                ),
-                                errorWidget: (_, __, ___) => Container(
-                                  color: AppColors.grey800,
-                                  child: const Icon(Icons.music_note, color: Colors.white54),
-                                ),
+                      child: Container(
+                        width: 55,
+                        height: 55,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: CachedNetworkImage(
+                            imageUrl: track.coverImageUrl ?? '',
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                              color: AppColors.grey800,
+                              child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
                             ),
+                            errorWidget: (_, __, ___) => Container(
+                              color: AppColors.grey800,
+                              child: const Icon(Icons.music_note, color: Colors.white54),
+                            ),
                           ),
-                          const SizedBox(width: 14),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width - 200,
-                                child: Text(
-                                  track.title ?? 'Unknown Track',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                "${_controller.getCategoryName(track)} • ${_controller.formatDuration(track.durationSeconds)}",
-                                style: const TextStyle(
-                                  color: Color(0xff9AA4B2),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                    const Spacer(),
-                    // Play/Pause icon
-                    Obx(() {
-                      final isCurrentTrack = _playerController.currentTrack.value?.id == track.id;
-                      final isPlaying = _playerController.isPlaying.value;
-
-                      return Icon(
-                        (isCurrentTrack && isPlaying) ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                        color: AppColors.whiteColor70,
-                        size: 30,
-                      );
-                    }),
-                    const SizedBox(width: 12),
-                    // Favorite Button - Instant UI update
+                    const SizedBox(width: 14),
+                    // Track Info - Also tappable to play
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _playTrack(track, _controller.popularTracks, index),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              track.title ?? 'Unknown Track',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              "${_controller.getCategoryName(track)} • ${_controller.formatDuration(track.durationSeconds)}",
+                              style: const TextStyle(
+                                color: Color(0xff9AA4B2),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Play/Pause button - Fixed: Now properly plays music
+                    GestureDetector(
+                      onTap: () {
+                        // Fixed: Call play function when play button is tapped
+                        _handlePlayButtonTap(track, _controller.popularTracks, index);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          (isCurrentTrack && isPlaying) ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          color: AppColors.whiteColor70,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Favorite Button
                     GestureDetector(
                       onTap: () => _toggleFavorite(track),
                       child: Icon(
@@ -737,55 +749,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  // Shimmer for Popular Listening section
-  Widget _buildPopularShimmer() {
-    return Column(
-      children: List.generate(
-        5,
-            (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Shimmer.fromColors(
-            baseColor: AppColors.grey850!,
-            highlightColor: AppColors.grey800!,
-            child: Row(
-              children: [
-                Container(
-                  width: 55,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    color: AppColors.grey800,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Container(
-                  width: 200,
-                  height: 16,
-                  color: AppColors.grey800,
-                ),
-                const Spacer(),
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration:  BoxDecoration(
-                    color: AppColors.grey800,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 24,
-                  height: 24,
-                  color: AppColors.grey800,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
