@@ -219,26 +219,12 @@ class MenuScreenController extends GetxController {
                 (opt) => ListTile(
               title: Text(opt,
                   style: const TextStyle(color: Colors.white, fontSize: 15)),
-              trailing: isSavingSleepTimer.value && sleepTimer.value == opt
-              // Show a small spinner while this option is saving
-                  ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Color(0xFF6C5ECF)),
-              )
-                  : sleepTimer.value == opt
+              trailing: sleepTimer.value == opt
                   ? const Icon(Icons.check, color: Color(0xFF6C5ECF))
                   : null,
-              onTap: isSavingSleepTimer.value
-                  ? null // Disable all taps while a save is in-flight
-                  : () {
+              onTap: () {
                 // Close the sheet first, THEN fire the async save.
-                // This prevents the Obx inside the dismissed sheet
-                // from trying to rebuild after it's gone.
                 Navigator.pop(context);
-                // Use Future.microtask so the pop animation
-                // finishes before we start the network call.
                 Future.microtask(() => updateSleepTimer(opt));
               },
             ),
