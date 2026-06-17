@@ -8,6 +8,7 @@ class AppUrl {
   static const String resendEmailOtp = '$baseUrl/auth/register';
   static const String verifyEmailOtp = '$baseUrl/auth/verify-email';
   static const String login = '$baseUrl/auth/login';
+  static const String refreshToken = '$baseUrl/auth/refresh-tokens';
   static const String googleLogin = '$baseUrl/auth/google-login';
 
   /// Category & Tracks
