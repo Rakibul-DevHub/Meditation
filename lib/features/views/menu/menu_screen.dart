@@ -51,7 +51,7 @@ class MenuScreen extends StatelessWidget {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Manage your account, preferences, and app features.',
+                        'Manage your account, preferences, features.',
                         style: TextStyle(color: Colors.white54, fontSize: 13),
                       ),
                       SizedBox(height: 24),
