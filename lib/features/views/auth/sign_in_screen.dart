@@ -97,37 +97,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
                           const SizedBox(height: 40),
 
-                          /// Error banner
-                          Obx(() {
-                            if (_controller
-                                .generalErrorMessage.value.isNotEmpty) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: Colors.red.withOpacity(0.3)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.error_outline,
-                                        color: Colors.red, size: 20),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _controller.generalErrorMessage.value,
-                                        style: const TextStyle(
-                                            color: Colors.red, fontSize: 14),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          }),
 
                           /// Email label
                           const Align(

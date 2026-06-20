@@ -3,67 +3,72 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart'; // Add this for custom HttpClient
+import 'package:dio/io.dart';
+import 'package:get/get.dart' hide Response, FormData;
 import 'network_response_dio.dart';
+import 'secure_storage_service.dart';
+import 'token_refresh_service.dart';
+import '../../features/views/onboard/onboard_screen.dart';
 
 class NetworkCallerDio {
   late final Dio _dio;
 
   NetworkCallerDio() {
     _dio = Dio(BaseOptions(
-      // ⚡ Performance optimizations
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 10),
-
-      // Enable gzip compression
       headers: {
         'Accept-Encoding': 'gzip, deflate',
       },
-
-      // Don't follow redirects automatically (saves time)
       followRedirects: false,
-
-      // Validate status
       validateStatus: (status) => status! < 500,
     ));
 
-    // ⚡ Add interceptor for logging only in debug mode
     if (kDebugMode) {
       _dio.interceptors.add(LogInterceptor(
-        request: false, // Disable request logging for speed
+        request: false,
         requestHeader: false,
         requestBody: false,
         responseHeader: false,
-        responseBody: false, // Disable response body logging for speed
+        responseBody: false,
         error: true,
       ));
     }
 
-    // ⚡ Custom HTTP client adapter for better performance
     (_dio.httpClientAdapter as IOHttpClientAdapter).onHttpClientCreate = (HttpClient client) {
       client.idleTimeout = const Duration(seconds: 10);
       client.connectionTimeout = const Duration(seconds: 10);
-      // Enable connection pooling
       client.maxConnectionsPerHost = 10;
       return client;
     };
   }
 
-  // Generic function to handle any HTTP request (GET, POST, PUT, DELETE)
+  // Adjusted signature to accept a factory generator function for FormData
   Future<NetworkResponseDio> _request(
       String method,
       String url, {
         Map<String, dynamic>? body,
+        FormData Function()? formDataFactory,
         Map<String, String>? headers,
         bool isLogin = false,
+        bool isRetry = false,
       }) async {
+    // Generate the fresh FormData instance if the factory exists
+    final FormData? formData = formDataFactory?.call();
+
     final Map<String, String> requestHeaders = <String, String>{
-      'Content-Type': 'application/json',
+      'Content-Type': formData != null ? 'multipart/form-data' : 'application/json',
       ...?headers,
     };
 
-    // ⚡ Only log in debug mode and with minimal info
+    if (!isLogin) {
+      final accessToken = await SecureStorageService.instance.getAccessToken();
+      if (accessToken != null && accessToken.isNotEmpty) {
+        requestHeaders['Authorization'] = 'Bearer $accessToken';
+      }
+    }
+
     if (kDebugMode) {
       debugPrint('🌐 $method: ${url.split('?').first}');
     }
@@ -71,53 +76,54 @@ class NetworkCallerDio {
     try {
       Response response;
       final options = Options(headers: requestHeaders);
+      final dynamic activePayload = formData ?? (body != null ? jsonEncode(body) : null);
 
       switch (method.toUpperCase()) {
         case 'POST':
-          response = await _dio.post(
-            url,
-            data: jsonEncode(body),
-            options: options,
-          );
+          response = await _dio.post(url, data: activePayload, options: options);
           break;
-
         case 'GET':
-          response = await _dio.get(
-            url,
-            options: options,
-          );
+          response = await _dio.get(url, options: options);
           break;
-
         case 'PUT':
-          response = await _dio.put(
-            url,
-            data: jsonEncode(body),
-            options: options,
-          );
+          response = await _dio.put(url, data: activePayload, options: options);
           break;
-
         case 'DELETE':
-          response = await _dio.delete(
-            url,
-            data: body != null ? jsonEncode(body) : null,
-            options: options,
-          );
+          response = await _dio.delete(url, data: activePayload, options: options);
           break;
-
         case 'PATCH':
-          response = await _dio.patch(
-            url,
-            data: jsonEncode(body),
-            options: options,
-          );
+          response = await _dio.patch(url, data: activePayload, options: options);
           break;
-
         default:
           throw Exception('Unsupported HTTP method: $method');
       }
 
       if (kDebugMode) {
         debugPrint('✅ Response: ${response.statusCode}');
+      }
+
+      if (response.statusCode == 401 && !isLogin && !isRetry) {
+        if (kDebugMode) {
+          debugPrint('🔄 401 received — attempting token refresh...');
+        }
+
+        final refreshed = await TokenRefreshService.instance.refreshAccessToken();
+
+        if (refreshed) {
+          // Re-runs with the same factory to successfully build a brand-new stream
+          return _request(
+            method,
+            url,
+            body: body,
+            formDataFactory: formDataFactory,
+            headers: headers,
+            isLogin: isLogin,
+            isRetry: true,
+          );
+        } else {
+          await SecureStorageService.instance.clearAll();
+          Get.offAll(() => const OnboardingScreen());
+        }
       }
 
       return _handleResponse(response, isLogin);
@@ -129,7 +135,6 @@ class NetworkCallerDio {
         statusCode: null,
         errorMessage: 'No internet connection. Please check your network settings.',
       );
-
     } on DioException catch (e) {
       debugPrint('❌ DioError: ${e.type}');
 
@@ -157,7 +162,6 @@ class NetworkCallerDio {
         jsonResponse: errorResponse,
         errorMessage: errorMessage,
       );
-
     } catch (e) {
       debugPrint('❌ Error: $e');
       return NetworkResponseDio(
@@ -180,18 +184,14 @@ class NetworkCallerDio {
       case DioExceptionType.cancel:
         return 'Request cancelled.';
       default:
-        return 'Network error. Please try again.';
+        return 'Internal Error. Please try again.';
     }
   }
 
-  // Helper method to extract error message from response
   String _extractErrorMessage(Map<String, dynamic> response) {
-    // Priority 1: Check 'message' field
     if (response.containsKey('message') && response['message'] != null) {
       return response['message'].toString();
     }
-
-    // Priority 2: Check 'error' array or object
     if (response.containsKey('error')) {
       final errorData = response['error'];
       if (errorData is List && errorData.isNotEmpty) {
@@ -202,18 +202,15 @@ class NetworkCallerDio {
         return errorData['message'].toString();
       }
     }
-
     return response['message'] ?? 'Request failed';
   }
 
-  // Handles response from the HTTP request
   NetworkResponseDio _handleResponse(Response response, bool isLogin) {
     try {
       final Map<String, dynamic> jsonResponse = response.data is String
           ? jsonDecode(response.data)
           : Map<String, dynamic>.from(response.data);
 
-      // Handle successful responses
       if (response.statusCode == 200 || response.statusCode == 201) {
         return NetworkResponseDio(
           isSuccess: true,
@@ -222,10 +219,8 @@ class NetworkCallerDio {
         );
       }
 
-      // For all error responses, extract the message from the response body
       String errorMessage = _extractErrorMessage(jsonResponse);
 
-      // Handle specific status codes with fallback messages
       switch (response.statusCode) {
         case 400:
           errorMessage = errorMessage != 'Request failed' ? errorMessage : 'Bad request.';
@@ -250,7 +245,6 @@ class NetworkCallerDio {
         jsonResponse: jsonResponse,
         errorMessage: errorMessage,
       );
-
     } catch (e) {
       return NetworkResponseDio(
         isSuccess: false,
@@ -259,7 +253,6 @@ class NetworkCallerDio {
     }
   }
 
-  // GET Request
   Future<NetworkResponseDio> getRequest(
       String url, {
         Map<String, String>? headers,
@@ -268,7 +261,6 @@ class NetworkCallerDio {
     return _request('GET', url, headers: headers, isLogin: isLogin);
   }
 
-  // POST Request
   Future<NetworkResponseDio> postRequest(
       String url, {
         Map<String, dynamic>? body,
@@ -278,7 +270,6 @@ class NetworkCallerDio {
     return _request('POST', url, body: body, isLogin: isLogin, headers: headers);
   }
 
-  // PUT Request
   Future<NetworkResponseDio> putRequest(
       String url, {
         Map<String, dynamic>? body,
@@ -288,7 +279,6 @@ class NetworkCallerDio {
     return _request('PUT', url, body: body, isLogin: isLogin, headers: headers);
   }
 
-  // DELETE Request
   Future<NetworkResponseDio> deleteRequest(
       String url, {
         Map<String, dynamic>? body,
@@ -298,13 +288,13 @@ class NetworkCallerDio {
     return _request('DELETE', url, body: body, isLogin: isLogin, headers: headers);
   }
 
-  // PATCH Request
   Future<NetworkResponseDio> patchRequest(
       String url, {
         Map<String, dynamic>? body,
+        FormData Function()? formDataFactory,
         bool isLogin = false,
         Map<String, String>? headers,
       }) async {
-    return _request('PATCH', url, body: body, isLogin: isLogin, headers: headers);
+    return _request('PATCH', url, body: body, formDataFactory: formDataFactory, isLogin: isLogin, headers: headers);
   }
 }

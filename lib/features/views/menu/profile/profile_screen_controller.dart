@@ -1,12 +1,15 @@
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart' as dio;
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/network/app_url.dart';
 import '../../../../core/network/network_caller_dio.dart';
 import '../../../../core/network/secure_storage_service.dart';
 
 class ProfileController extends GetxController {
   final NetworkCallerDio _networkCaller = NetworkCallerDio();
+  final ImagePicker _picker = ImagePicker();
 
   // Loading states
   final RxBool isLoading = false.obs;
@@ -25,6 +28,9 @@ class ProfileController extends GetxController {
   final RxString profileImage = ''.obs;
   final RxString userType = ''.obs;
   final RxString createdAt = ''.obs;
+
+  // Track locally chosen image path
+  final RxString selectedImagePath = ''.obs;
 
   // Form controllers
   late TextEditingController firstNameController;
@@ -51,6 +57,23 @@ class ProfileController extends GetxController {
     emailController.dispose();
     phoneController.dispose();
     super.onClose();
+  }
+
+  // Method to pick image from gallery or camera source
+  Future<void> pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 80, // Slightly compress image quality to save bandwidth
+      );
+
+      if (pickedFile != null) {
+        selectedImagePath.value = pickedFile.path;
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to pick image';
+      debugPrint('❌ Error picking image: $e');
+    }
   }
 
   // Fetch user profile from API
@@ -123,7 +146,7 @@ class ProfileController extends GetxController {
     }
   }
 
-  // Update user profile using PATCH API
+  // Update user profile using PATCH API (Supports JSON & fresh FormData generation)
   Future<bool> updateProfile() async {
     isSaving.value = true;
     errorMessage.value = '';
@@ -136,35 +159,45 @@ class ProfileController extends GetxController {
         return false;
       }
 
-      // Prepare update data (only send fields that can be updated)
-      final Map<String, dynamic> updateData = {};
+      // Check if we need to send multipart form-data or standard json
+      bool useMultipart = selectedImagePath.isNotEmpty;
 
-      // Only add fields that have changed
-      if (firstNameController.text.trim() != firstName.value) {
-        updateData['firstName'] = firstNameController.text.trim();
-      }
-
-      if (lastNameController.text.trim() != lastName.value) {
-        updateData['lastName'] = lastNameController.text.trim();
-      }
-
-      if (phoneController.text.trim() != phoneNumber.value) {
-        updateData['phoneNumber'] = phoneController.text.trim();
-      }
-
-      // If no changes, return early
-      if (updateData.isEmpty) {
-        debugPrint('📝 No changes to update');
-        isSaving.value = false;
-        return true;
-      }
-
-      debugPrint('📤 Updating profile with PATCH: $updateData');
+      debugPrint('📤 Updating profile...');
 
       final response = await _networkCaller.patchRequest(
         AppUrl.updateMyProfile,
-        body: updateData,
         headers: {'Authorization': 'Bearer $token'},
+        // Case A: Send plain JSON body if NO local image is selected
+        body: useMultipart
+            ? null
+            : {
+          'firstName': firstNameController.text.trim(),
+          'lastName': lastNameController.text.trim(),
+          'phoneNumber': phoneController.text.trim(),
+        },
+        // Case B: Send fresh dynamic FormData factory if an image IS selected
+        formDataFactory: useMultipart
+            ? () {
+          final dio.FormData formData = dio.FormData();
+
+          // Add textual data fields
+          formData.fields.addAll([
+            MapEntry('firstName', firstNameController.text.trim()),
+            MapEntry('lastName', lastNameController.text.trim()),
+            MapEntry('phoneNumber', phoneController.text.trim()),
+          ]);
+
+          // Append the multipart file using the correct backend 'image' key
+          File file = File(selectedImagePath.value);
+          String fileName = file.path.split('/').last;
+          formData.files.add(MapEntry(
+            'image', // Changed from 'profileImage' to 'image' to fix backend mismatch
+            dio.MultipartFile.fromFileSync(file.path, filename: fileName),
+          ));
+
+          return formData;
+        }
+            : null,
       );
 
       debugPrint('📡 Update Response Status: ${response.statusCode}');
@@ -183,6 +216,7 @@ class ProfileController extends GetxController {
           lastName.value = data['lastName']?.toString() ?? lastName.value;
           phoneNumber.value = data['phoneNumber']?.toString() ?? phoneNumber.value;
           fullName.value = data['fullName']?.toString() ?? fullName.value;
+          profileImage.value = data['profileImage']?.toString() ?? profileImage.value;
 
           // Update controllers with new values
           firstNameController.text = firstName.value;
@@ -190,9 +224,6 @@ class ProfileController extends GetxController {
           phoneController.text = phoneNumber.value;
 
           debugPrint('✅ Profile updated successfully');
-          debugPrint('📝 Updated firstName: ${firstName.value}');
-          debugPrint('📝 Updated lastName: ${lastName.value}');
-          debugPrint('📝 Updated phoneNumber: ${phoneNumber.value}');
         } else {
           // If response doesn't have data object, update manually
           firstName.value = firstNameController.text.trim();
@@ -202,6 +233,7 @@ class ProfileController extends GetxController {
           debugPrint('✅ Profile updated successfully (manual update)');
         }
 
+        selectedImagePath.value = ''; // Safely clear local selection on success
         return true;
       } else {
         errorMessage.value = response.errorMessage ?? 'Failed to update profile';

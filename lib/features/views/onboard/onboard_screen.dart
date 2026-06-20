@@ -81,16 +81,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         centerTitle: true,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: GestureDetector(
-              onTap: _skipToEnd,
-              child: const Text(
-                "Skip",
-                style: TextStyle(
-                  color: Color(0xff615fff),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+          Visibility(
+            visible: _currentPage < _contents.length - 1,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 20),
+              child: GestureDetector(
+                onTap: _skipToEnd,
+                child: const Text(
+                  "Skip",
+                  style: TextStyle(
+                    color: Color(0xff615fff),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

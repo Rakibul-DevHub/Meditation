@@ -1,6 +1,8 @@
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:outdoor_therapy/core/app_colors.dart';
 import 'package:outdoor_therapy/features/views/menu/profile/profile_screen_controller.dart';
@@ -37,7 +39,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
       ),
       body: Obx(() {
-        // Show loading state
         if (_controller.isLoading.value && _controller.firstName.value.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(
@@ -46,7 +47,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        // Show error state
         if (_controller.errorMessage.isNotEmpty && _controller.firstName.value.isEmpty) {
           return Center(
             child: Padding(
@@ -54,11 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
                     _controller.errorMessage.value,
@@ -87,7 +83,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Profile Picture
                     Center(
                       child: Stack(
                         children: [
@@ -99,55 +94,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(60),
-                              child: _controller.getProfileImageUrl() != null
-                                  ? CachedNetworkImage(
-                                imageUrl: _controller.getProfileImageUrl()!,
-                                fit: BoxFit.cover,
-                                placeholder: (_, __) => Container(
-                                  color: Colors.grey[800],
-                                  child: const Center(
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                              child: Obx(() {
+                                if (_controller.selectedImagePath.isNotEmpty) {
+                                  return Image.file(
+                                    File(_controller.selectedImagePath.value),
+                                    fit: BoxFit.cover,
+                                  );
+                                }
+                                return _controller.getProfileImageUrl() != null
+                                    ? CachedNetworkImage(
+                                  imageUrl: _controller.getProfileImageUrl()!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(
+                                    color: Colors.grey[800],
+                                    child: const Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
                                     ),
                                   ),
-                                ),
-                                errorWidget: (_, __, ___) => Container(
-                                  color: Colors.grey[800],
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Colors.white54,
+                                  errorWidget: (_, __, ___) => Container(
+                                    color: Colors.grey[800],
+                                    child: const Icon(Icons.person, size: 50, color: Colors.white54),
                                   ),
-                                ),
-                              )
-                                  : Container(
-                                color: Colors.grey[800],
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.white54,
-                                ),
-                              ),
+                                )
+                                    : Container(
+                                  color: Colors.grey[800],
+                                  child: const Icon(Icons.person, size: 50, color: Colors.white54),
+                                );
+                              }),
                             ),
                           ),
                           Positioned(
                             right: 0,
                             bottom: 0,
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFF0A0E21),
-                                  width: 3,
+                            child: GestureDetector(
+                              onTap: () => _showImageSourceBottomSheet(context),
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFF0A0E21),
+                                    width: 3,
+                                  ),
                                 ),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Color(0xFF0A0E21),
-                                size: 20,
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Color(0xFF0A0E21),
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
@@ -155,14 +151,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // User Type Badge
                     Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: _controller.isPremium()
                               ? Colors.amber.withOpacity(0.2)
@@ -172,32 +163,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Text(
                           _controller.getUserTypeDisplay(),
                           style: TextStyle(
-                            color: _controller.isPremium()
-                                ? Colors.amber
-                                : Colors.grey,
+                            color: _controller.isPremium() ? Colors.amber : Colors.grey,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ),
-
                     if (_controller.getMemberSince().isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Center(
                         child: Text(
                           _controller.getMemberSince(),
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 11,
-                          ),
+                          style: const TextStyle(color: Colors.white54, fontSize: 11),
                         ),
                       ),
                     ],
-
                     const SizedBox(height: 32),
-
-                    // First Name and Last Name
                     Row(
                       children: [
                         Expanded(
@@ -215,20 +197,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Email (disabled - can't be edited)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'Email (You can\'t change this)',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -242,21 +217,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               const Padding(
                                 padding: EdgeInsets.only(left: 16),
-                                child: Icon(
-                                  Icons.email_outlined,
-                                  color: Color(0xFF64748B),
-                                  size: 20,
-                                ),
+                                child: Icon(Icons.email_outlined, color: Color(0xFF64748B), size: 20),
                               ),
                               Expanded(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
                                   child: Obx(() => Text(
                                     _controller.email.value,
-                                    style: const TextStyle(
-                                      color: Color(0xFF64748B),
-                                      fontSize: 15,
-                                    ),
+                                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 15),
                                   )),
                                 ),
                               ),
@@ -265,23 +233,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Phone
                     _buildTextField(
                       controller: _controller.phoneController,
                       label: 'Phone',
                       prefixIcon: Icons.phone_outlined,
                     ),
-
                     const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
-
-            // Save Button (Fixed at bottom)
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Obx(() => Container(
@@ -308,7 +270,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : () async {
                     final success = await _controller.updateProfile();
                     if (success && mounted) {
-                      // Show success message
                       ScaffoldMessenger.of(context).clearSnackBars();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -317,14 +278,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           duration: Duration(seconds: 2),
                         ),
                       );
-                      // Navigate back after successful update
                       Future.delayed(const Duration(milliseconds: 500), () {
-                        if (mounted) {
-                          Navigator.pop(context);
-                        }
+                        if (mounted) Navigator.pop(context);
                       });
                     } else if (!success && mounted) {
-                      // Show error message
                       ScaffoldMessenger.of(context).clearSnackBars();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -338,26 +295,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _controller.isSaving.value
                       ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
                       : const Text(
                     'Save Changes',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               )),
@@ -378,11 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         Container(
@@ -399,22 +343,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
               prefixIcon: prefixIcon != null
                   ? Padding(
                 padding: const EdgeInsets.only(left: 16, right: 8),
-                child: Icon(
-                  prefixIcon,
-                  color: const Color(0xFF64748B),
-                  size: 20,
-                ),
+                child: Icon(prefixIcon, color: const Color(0xFF64748B), size: 20),
               )
                   : null,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 15,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _showImageSourceBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF151932),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white),
+                title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _controller.pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.white),
+                title: const Text('Take a Photo', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _controller.pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
