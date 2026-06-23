@@ -16,7 +16,7 @@ import 'player_controller.dart';
 import '../../../model/category_model.dart';
 import '../menu/controller/menu_screen_controller.dart';
 import '../download/download_controller.dart';
-import '../favorite/favorite_screen_controller.dart'; // Import FavoriteScreenController
+import '../favorite/favorite_screen_controller.dart';
 
 class NowPlayingScreen extends StatefulWidget {
   const NowPlayingScreen({super.key});
@@ -42,6 +42,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
 
   Timer? _sleepTimer;
 
+  // ✅ NEW: Slider state management
+  final RxDouble _sliderValue = 0.0.obs;
+  final RxBool _isDragging = false.obs;
+  late final StreamSubscription<Duration> _positionSubscription;
+
+  // Track when we last updated the position from the actual player
+  Duration _lastPositionUpdate = Duration.zero;
+
   final Dio _downloadDio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(minutes: 10),
@@ -64,6 +72,15 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
     } else {
       _downloadController = Get.put(DownloadController());
     }
+
+    // ✅ Listen to position changes and update slider only when NOT dragging
+    _positionSubscription = _playerController.position.listen((position) {
+      if (!_isDragging.value) {
+        // ✅ Convert to double properly
+        _sliderValue.value = position.inSeconds.toDouble();
+        _lastPositionUpdate = position;
+      }
+    });
 
     // Listen to track changes
     _listenToTrackChanges();
@@ -106,6 +123,9 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
         _checkDownloadStatus(),
       ]);
       _applySleepTimerFromController();
+
+      // ✅ Initialize slider value - convert to double
+      _sliderValue.value = _playerController.position.value.inSeconds.toDouble();
     }
 
     isLoading.value = false;
@@ -613,6 +633,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
 
   @override
   void dispose() {
+    _positionSubscription.cancel();
     _sleepTimer?.cancel();
     super.dispose();
   }
@@ -641,6 +662,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       ),
       body: Obx(() {
         final track = _playerController.currentTrack.value;
+        final currentDuration = _playerController.duration.value;
 
         // Show loading indicator on initial load only
         if (isLoading.value && _isInitialLoad) {
@@ -727,6 +749,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
 
                 const SizedBox(height: 80),
 
+                // ✅ FIXED SLIDER with proper drag handling
                 SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 4,
@@ -736,25 +759,54 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                     overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
                   ),
-                  child: Slider(
-                    value: _playerController.position.value.inSeconds
-                        .toDouble()
-                        .clamp(0, _playerController.duration.value.inSeconds.toDouble()),
-                    max: _playerController.duration.value.inSeconds.toDouble() > 0
-                        ? _playerController.duration.value.inSeconds.toDouble()
-                        : 100,
-                    onChanged: (v) => _playerController.seek(Duration(seconds: v.toInt())),
-                  ),
-                ),
+                  child: Obx(() {
+                    // ✅ Get max value as double
+                    final maxValue = currentDuration.inSeconds.toDouble();
+                    // ✅ Clamp the slider value to max
+                    final displayValue = _sliderValue.value.clamp(0.0, maxValue);
+                    final currentPosition = Duration(seconds: displayValue.toInt());
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(_formatDuration(_playerController.position.value),
-                        style: const TextStyle(color: Colors.white, fontSize: 12)),
-                    Text(_formatDuration(_playerController.duration.value),
-                        style: const TextStyle(color: Color(0xff94A3B8), fontSize: 12)),
-                  ],
+                    return Column(
+                      children: [
+                        Slider(
+                          value: displayValue,
+                          max: maxValue > 0 ? maxValue : 100.0, // ✅ Ensure double
+                          onChanged: (double value) {
+                            // ✅ User is dragging - update slider UI smoothly
+                            _isDragging.value = true;
+                            _sliderValue.value = value;
+                          },
+                          onChangeStart: (double value) {
+                            // User started dragging
+                            _isDragging.value = true;
+                          },
+                          onChangeEnd: (double value) {
+                            // ✅ User stopped dragging - seek to the final position
+                            _isDragging.value = false;
+                            final seekPosition = Duration(seconds: value.toInt());
+                            _playerController.seek(seekPosition);
+                            _lastPositionUpdate = seekPosition;
+                          },
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              // ✅ Show the slider position while dragging, otherwise show actual position
+                              _isDragging.value
+                                  ? _formatDuration(currentPosition)
+                                  : _formatDuration(_playerController.position.value),
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                            Text(
+                              _formatDuration(currentDuration),
+                              style: const TextStyle(color: Color(0xff94A3B8), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  }),
                 ),
 
                 const SizedBox(height: 40),
