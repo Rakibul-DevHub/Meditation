@@ -1,3 +1,4 @@
+
 import 'package:get/get.dart';
 import 'splash_controller.dart';
 import 'package:flutter/material.dart';
@@ -67,24 +68,20 @@ class _SplashScreenState extends State<SplashScreen>
               child: Row(
                 children: [
                   SvgPicture.asset(
-                    'assets/icons/logoIcon.svg',
-                    width: 50,
+                    'assets/icons/logoIcon_1.svg',
+                    width: 40,
+                    height: 60,
                   ),
-                  const SizedBox(width: 12),
                 ],
               ),
             ),
 
             SlideTransition(
               position: _textAnimation,
-              child: Text(
-                "Outdoor Therapy",
-                style: TextStyle(
-                  color: AppColors.primaryColor,
-                  fontSize: 50,
-                  fontFamily: 'Allison-Regular',
-                  fontWeight: FontWeight.bold,
-                ),
+              child: SvgPicture.asset(
+                'assets/icons/logoIcon_2.svg',
+                width: 40,
+                height: 60,
               ),
             ),
           ],
@@ -93,3 +90,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+
+
+
