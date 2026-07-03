@@ -1,4 +1,5 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,9 +15,14 @@ import 'firebase_options.dart';
 
 late MyAudioHandler audioHandler;
 
+Future<void> _backgroundMessageHandler (RemoteMessage message) async{
+  await Firebase.initializeApp();
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_backgroundMessageHandler);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -29,7 +35,7 @@ Future<void> main() async {
       androidNotificationChannelName: 'Audio Playback',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
-      notificationColor: Color(0xff6366F1),
+      // notificationColor: Color(0xff6366F1),
 
     ),
   );

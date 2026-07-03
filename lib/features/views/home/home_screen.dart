@@ -1,4 +1,5 @@
 /**
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -198,10 +199,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              SliverPadding(
-                padding: EdgeInsets.only(left: 20,right: 20,bottom: 50),
-                sliver: _buildPopularSliverList(),
-              ),
+              // ✅ REACTIVE SLIVER PADDING - adjusts based on mini player visibility
+              Obx(() {
+                // Use showMiniPlayer from PlayerController
+                final bool showMiniPlayer = _playerController.showMiniPlayer.value;
+                final double bottomPadding = showMiniPlayer ? 116.0 : 40.0;
+
+                return SliverPadding(
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    bottom: bottomPadding,
+                  ),
+                  sliver: _buildPopularSliverList(),
+                );
+              }),
               SliverToBoxAdapter(
                 child: Obx(() {
                   if (_controller.isPaginatingPopular.value) {
@@ -658,12 +670,12 @@ class SleepCard extends StatelessWidget {
 
 
 
-///
-///
-///
-/// todo:: updating the padding for mini player service.
-///
-///
+
+
+
+
+
+
 
 
 
@@ -674,6 +686,7 @@ class SleepCard extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:outdoor_therapy/core/services/notification_service.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/app_colors.dart';
 import '../../../core/network/app_url.dart';
@@ -718,6 +731,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    NotificationService notificationService = NotificationService();
+    notificationService.requestedNotificationPermission();
+    notificationService.getFcmToekn();
+
     if (Get.isRegistered<HomeScreenController>()) {
       _controller = Get.find<HomeScreenController>();
     } else {
@@ -740,6 +758,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _controller.fetchPopularSounds(isLoadMore: true);
       }
     });
+
+
   }
 
   @override
@@ -812,92 +832,126 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _controller.refreshAllData,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          children: [
+            // ✅ FIXED HEADER - Does NOT scroll
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(greeting, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
-                          Obx(() {
-                            final timerLabel = _menuController.sleepTimer.value;
-                            final isActive = timerLabel != 'Off';
-                            return GestureDetector(
-                              onTap: _showSleepTimerSheet,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xff101828),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: isActive ? const Color(0xFF6366F1) : const Color(0xff364153)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.watch_later_outlined, size: 16, color: isActive ? const Color(0xFF6366F1) : AppColors.whiteColor70),
-                                    const SizedBox(width: 6),
-                                    Text(timerLabel == 'Off' ? 'Sleep' : timerLabel, style: TextStyle(color: isActive ? const Color(0xFF6366F1) : AppColors.whiteColor70)),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }),
-                        ],
+                      Text(
+                        greeting,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text("Time to unwind and relax", style: TextStyle(color: Color(0xff9AA4B2))),
-                      const SizedBox(height: 20),
-                      const SectionHeader(title: "Featured Sounds"),
-                      const SizedBox(height: 16),
-                      _buildFeaturedSection(),
-                      const SizedBox(height: 0),
-                      const SectionHeader(title: "Sleep Tonight"),
-                      const SizedBox(height: 16),
-                      _buildSleepSection(),
-                      const SizedBox(height: 0),
-                      const SectionHeader(title: "Popular Listening"),
-                      const SizedBox(height: 16),
+                      Obx(() {
+                        final timerLabel = _menuController.sleepTimer.value;
+                        final isActive = timerLabel != 'Off';
+                        return GestureDetector(
+                          onTap: _showSleepTimerSheet,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xff101828),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isActive
+                                    ? const Color(0xFF6366F1)
+                                    : const Color(0xff364153),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.watch_later_outlined,
+                                  size: 16,
+                                  color: isActive
+                                      ? const Color(0xFF6366F1)
+                                      : AppColors.whiteColor70,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  timerLabel == 'Off' ? 'Sleep' : timerLabel,
+                                  style: TextStyle(
+                                    color: isActive
+                                        ? const Color(0xFF6366F1)
+                                        : AppColors.whiteColor70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Time to unwind and relax",
+                    style: TextStyle(color: Color(0xff9AA4B2)),
+                  ),
+                  const SizedBox(height: 20),
+                  const SectionHeader(title: "Featured Sounds"),
+                  const SizedBox(height: 16),
+                  _buildFeaturedSection(),
+                  const SizedBox(height: 20),
+                  const SectionHeader(title: "Sleep Tonight"),
+                  const SizedBox(height: 16),
+                  _buildSleepSection(),
+                  const SizedBox(height: 20),
+                  const SectionHeader(title: "Popular Listening"),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+            // ✅ SCROLLABLE CONTENT
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _controller.refreshAllData,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // ✅ REACTIVE SLIVER PADDING - adjusts based on mini player visibility
+                    Obx(() {
+                      final bool showMiniPlayer = _playerController.showMiniPlayer.value;
+                      final double bottomPadding = showMiniPlayer ? 116.0 : 40.0;
+
+                      return SliverPadding(
+                        padding: EdgeInsets.only(
+                          left: 20,
+                          right: 20,
+                          bottom: bottomPadding,
+                        ),
+                        sliver: _buildPopularSliverList(),
+                      );
+                    }),
+                    SliverToBoxAdapter(
+                      child: Obx(() {
+                        if (_controller.isPaginatingPopular.value) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            child: _buildPopularShimmerItem(),
+                          );
+                        }
+                        return const SizedBox(height: 40);
+                      }),
+                    ),
+                  ],
                 ),
               ),
-              // ✅ REACTIVE SLIVER PADDING - adjusts based on mini player visibility
-              Obx(() {
-                // Use showMiniPlayer from PlayerController
-                final bool showMiniPlayer = _playerController.showMiniPlayer.value;
-                final double bottomPadding = showMiniPlayer ? 116.0 : 40.0;
-
-                return SliverPadding(
-                  padding: EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    bottom: bottomPadding,
-                  ),
-                  sliver: _buildPopularSliverList(),
-                );
-              }),
-              SliverToBoxAdapter(
-                child: Obx(() {
-                  if (_controller.isPaginatingPopular.value) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      child: _buildPopularShimmerItem(),
-                    );
-                  }
-                  return const SizedBox(height: 40);
-                }),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
