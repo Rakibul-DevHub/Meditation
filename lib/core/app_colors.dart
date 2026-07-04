@@ -9,6 +9,7 @@ class AppColors {
   static const Color favoriteColor = Color(0xFF7B61FF);
   static const Color checkingColorTrue = Colors.green;
   static const Color checkingColorFalse = Color(0xff6a7282);
+  static const Color checkingColorFalseTwo = Color(0xff364153);
   static const Color whiteColor = Colors.white;
   static const Color whiteColor70 = Colors.white70;
   static const Color lightGreyColor = Color(0xff6a7282);
@@ -16,4 +17,8 @@ class AppColors {
   static const Color backGroundColor = Color(0xff030712);
   static final Color? grey800 = Colors.grey[800];
   static final Color? grey850 = Colors.grey[850];
+  static final Color textBlack = Colors.black;
+  static final Color textWhite = Colors.white;
+  static final Color? textGrey = Colors.grey.shade700;
+
 }

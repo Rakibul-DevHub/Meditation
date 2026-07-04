@@ -418,7 +418,7 @@ import 'package:outdoor_therapy/core/network/network_caller_dio.dart';
 import 'package:outdoor_therapy/core/network/secure_storage_service.dart';
 import 'package:outdoor_therapy/model/favorite_response_model.dart';
 import 'package:outdoor_therapy/features/views/favorite/favorite_screen_controller.dart';
-import 'package:outdoor_therapy/features/views/download/download_controller.dart';
+import 'package:outdoor_therapy/features/views/download/download_screen_controller.dart';
 
 class BrowseDetailsScreen extends StatefulWidget {
   final String categoryId;

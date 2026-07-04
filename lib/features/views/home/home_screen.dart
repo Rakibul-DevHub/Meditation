@@ -1,8 +1,10 @@
 /**
 
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:outdoor_therapy/core/app_text_style.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/app_colors.dart';
 import '../../../core/network/app_url.dart';
@@ -157,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(greeting, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text(greeting, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
                           Obx(() {
                             final timerLabel = _menuController.sleepTimer.value;
                             final isActive = timerLabel != 'Off';
@@ -166,15 +168,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xff101828),
+                                  color: AppColors.mainBottomNavColor,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: isActive ? const Color(0xFF6366F1) : const Color(0xff364153)),
+                                  border: Border.all(color: isActive ?  AppColors.primaryColor : AppColors.checkingColorFalseTwo),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.watch_later_outlined, size: 16, color: isActive ? const Color(0xFF6366F1) : AppColors.whiteColor70),
+                                    Icon(Icons.watch_later_outlined, size: 16, color: isActive ?  AppColors.primaryColor : AppColors.whiteColor70),
                                     const SizedBox(width: 6),
-                                    Text(timerLabel == 'Off' ? 'Sleep' : timerLabel, style: TextStyle(color: isActive ? const Color(0xFF6366F1) : AppColors.whiteColor70)),
+                                    Text(timerLabel == 'Off' ? 'Sleep' : timerLabel, style: TextStyle(color: isActive ?  AppColors.primaryColor : AppColors.whiteColor70)),
                                   ],
                                 ),
                               ),
@@ -183,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text("Time to unwind and relax", style: TextStyle(color: Color(0xff9AA4B2))),
+                      const Text("Time to unwind and relax", style: TextStyle(color: AppColors.whiteColor70)),
                       const SizedBox(height: 20),
                       const SectionHeader(title: "Featured Sounds"),
                       const SizedBox(height: 16),
@@ -662,22 +664,10 @@ class SleepCard extends StatelessWidget {
       ),
     );
   }
-}*/
+}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+*/
 
 
 
@@ -686,7 +676,7 @@ class SleepCard extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:outdoor_therapy/core/services/notification_service.dart';
+import 'package:outdoor_therapy/core/app_text_style.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/app_colors.dart';
 import '../../../core/network/app_url.dart';
@@ -731,11 +721,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    NotificationService notificationService = NotificationService();
-    notificationService.requestedNotificationPermission();
-    notificationService.getFcmToekn();
-
     if (Get.isRegistered<HomeScreenController>()) {
       _controller = Get.find<HomeScreenController>();
     } else {
@@ -758,8 +743,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _controller.fetchPopularSounds(isLoadMore: true);
       }
     });
-
-
   }
 
   @override
@@ -794,12 +777,20 @@ class _HomeScreenState extends State<HomeScreen> {
     _localFavoriteStatus[trackId] = !isCurrentlyFavorite;
     if (!isCurrentlyFavorite) {
       _favoriteController.tracks.insert(0, FavoriteTrack(
-        id: trackId, title: track.title ?? 'Unknown', description: track.description,
-        coverImageUrl: track.coverImageUrl, durationSeconds: track.durationSeconds,
-        categoryName: track.categoryName, playCount: track.playCount ?? 0,
-        downloadCount: track.downloadCount ?? 0, isFeatured: track.isFeatured ?? false,
-        isSleepTonight: track.isSleepTonight ?? false, createdAt: DateTime.now(),
-        updatedAt: DateTime.now(), categoryId: '', audioUrl: '',
+        id: trackId,
+        title: track.title ?? 'Unknown',
+        description: track.description,
+        coverImageUrl: track.coverImageUrl,
+        durationSeconds: track.durationSeconds,
+        categoryName: track.categoryName,
+        playCount: track.playCount ?? 0,
+        downloadCount: track.downloadCount ?? 0,
+        isFeatured: track.isFeatured ?? false,
+        isSleepTonight: track.isSleepTonight ?? false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        categoryId: '',
+        audioUrl: '',
       ));
     } else {
       _favoriteController.tracks.removeWhere((t) => t.id == trackId);
@@ -830,129 +821,139 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ✅ FIXED HEADER - Does NOT scroll
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        greeting,
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+      backgroundColor: AppColors.backGroundColor,
+      body: Column(
+        children: [
+          // ✅ FIXED HEADER - Greeting, Subtitle, Sleep Button (DOES NOT SCROLL)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      greeting,
+                      style: AppTextStyle.ARIAL_White.copyWith(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Obx(() {
-                        final timerLabel = _menuController.sleepTimer.value;
-                        final isActive = timerLabel != 'Off';
-                        return GestureDetector(
-                          onTap: _showSleepTimerSheet,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xff101828),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isActive
-                                    ? const Color(0xFF6366F1)
-                                    : const Color(0xff364153),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.watch_later_outlined,
-                                  size: 16,
-                                  color: isActive
-                                      ? const Color(0xFF6366F1)
-                                      : AppColors.whiteColor70,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  timerLabel == 'Off' ? 'Sleep' : timerLabel,
-                                  style: TextStyle(
-                                    color: isActive
-                                        ? const Color(0xFF6366F1)
-                                        : AppColors.whiteColor70,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    "Time to unwind and relax",
-                    style: TextStyle(color: Color(0xff9AA4B2)),
-                  ),
-                  const SizedBox(height: 20),
-                  const SectionHeader(title: "Featured Sounds"),
-                  const SizedBox(height: 16),
-                  _buildFeaturedSection(),
-                  const SizedBox(height: 20),
-                  const SectionHeader(title: "Sleep Tonight"),
-                  const SizedBox(height: 16),
-                  _buildSleepSection(),
-                  const SizedBox(height: 20),
-                  const SectionHeader(title: "Popular Listening"),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-            // ✅ SCROLLABLE CONTENT
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _controller.refreshAllData,
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // ✅ REACTIVE SLIVER PADDING - adjusts based on mini player visibility
-                    Obx(() {
-                      final bool showMiniPlayer = _playerController.showMiniPlayer.value;
-                      final double bottomPadding = showMiniPlayer ? 116.0 : 40.0;
-
-                      return SliverPadding(
-                        padding: EdgeInsets.only(
-                          left: 20,
-                          right: 20,
-                          bottom: bottomPadding,
-                        ),
-                        sliver: _buildPopularSliverList(),
-                      );
-                    }),
-                    SliverToBoxAdapter(
-                      child: Obx(() {
-                        if (_controller.isPaginatingPopular.value) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            child: _buildPopularShimmerItem(),
-                          );
-                        }
-                        return const SizedBox(height: 40);
-                      }),
+                    ),
+                    const SizedBox(height: 4),
+                     Text(
+                      "Time to unwind and relax",
+                      style: AppTextStyle.ARIAL_Grey.copyWith(
+                        fontSize: 14
+                      ),
                     ),
                   ],
                 ),
+                Obx(() {
+                  final timerLabel = _menuController.sleepTimer.value;
+                  final isActive = timerLabel != 'Off';
+                  return GestureDetector(
+                    onTap: _showSleepTimerSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.mainBottomNavColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isActive
+                              ? AppColors.primaryColor
+                              : AppColors.checkingColorFalseTwo,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.watch_later_outlined,
+                            size: 16,
+                            color: isActive
+                                ? AppColors.primaryColor
+                                : AppColors.whiteColor70,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            timerLabel == 'Off' ? 'Sleep' : timerLabel,
+                            style: AppTextStyle.ARIAL_White.copyWith(
+                              fontSize: 14,
+                              color: isActive
+                                  ? AppColors.primaryColor
+                                  : AppColors.whiteColor70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          // ✅ SCROLLABLE CONTENT
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _controller.refreshAllData,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20),
+                          const SectionHeader(title: "Featured Sounds"),
+                          const SizedBox(height: 16),
+                          _buildFeaturedSection(),
+                          const SizedBox(height: 20),
+                          const SectionHeader(title: "Sleep Tonight"),
+                          const SizedBox(height: 16),
+                          _buildSleepSection(),
+                          const SizedBox(height: 20),
+                          const SectionHeader(title: "Popular Listening"),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // ✅ REACTIVE SLIVER PADDING - adjusts based on mini player visibility
+                  Obx(() {
+                    final bool showMiniPlayer = _playerController.showMiniPlayer.value;
+                    final double bottomPadding = showMiniPlayer ? 116.0 : 40.0;
+
+                    return SliverPadding(
+                      padding: EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        bottom: bottomPadding,
+                      ),
+                      sliver: _buildPopularSliverList(),
+                    );
+                  }),
+                  SliverToBoxAdapter(
+                    child: Obx(() {
+                      if (_controller.isPaginatingPopular.value) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          child: _buildPopularShimmerItem(),
+                        );
+                      }
+                      return const SizedBox(height: 40);
+                    }),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -966,7 +967,12 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_controller.featuredTracks.isEmpty) {
         return const SizedBox(
           height: 180,
-          child: Center(child: Text('No featured sounds available', style: TextStyle(color: Colors.white54))),
+          child: Center(
+            child: Text(
+              'No featured sounds available',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
         );
       }
       return SizedBox(
@@ -983,7 +989,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 120, height: 120,
+                    width: 120,
+                    height: 120,
                     decoration: BoxDecoration(borderRadius: BorderRadius.circular(18)),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(18),
@@ -1006,14 +1013,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 120,
                     child: Text(
                       track.title ?? 'Unknown',
-                      style: const TextStyle(color: Colors.white),
+                      style: AppTextStyle.ARIAL_White.copyWith(
+                        fontSize: 14,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(
                     _controller.formatDuration(track.durationSeconds),
-                    style: const TextStyle(color: Color(0xff9AA4B2), fontSize: 12),
+                    style: AppTextStyle.ARIAL_White.copyWith(
+                      fontSize: 12,
+                      color: const Color(0xff9AA4B2),
+                    ),
                   ),
                 ],
               ),
@@ -1033,7 +1045,12 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_controller.sleepTonightTracks.isEmpty) {
         return const SizedBox(
           height: 180,
-          child: Center(child: Text('No sleep sounds available', style: TextStyle(color: Colors.white54))),
+          child: Center(
+            child: Text(
+              'No sleep sounds available',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
         );
       }
       return SizedBox(
@@ -1070,7 +1087,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Center(
             child: Padding(
               padding: EdgeInsets.all(32),
-              child: Text('No popular tracks available', style: TextStyle(color: Colors.white54)),
+              child: Text(
+                'No popular tracks available',
+                style: TextStyle(color: Colors.white54),
+              ),
             ),
           ),
         );
@@ -1091,7 +1111,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     GestureDetector(
                       onTap: () => _playTrack(track, _controller.popularTracks, index),
                       child: Container(
-                        width: 55, height: 55,
+                        width: 55,
+                        height: 55,
                         decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
@@ -1119,14 +1140,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               track.title ?? 'Unknown Track',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                              style: AppTextStyle.ARIAL_White.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 3),
                             Text(
                               "${_controller.getCategoryName(track)} • ${_controller.formatDuration(track.durationSeconds)}",
-                              style: const TextStyle(color: Color(0xff9AA4B2), fontSize: 12),
+                              style: AppTextStyle.ARIAL_White.copyWith(
+                                fontSize: 12,
+                                color: const Color(0xff9AA4B2),
+                              ),
                             ),
                           ],
                         ),
@@ -1321,8 +1347,7 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
-        color: Colors.white,
+      style: AppTextStyle.ARIAL_White.copyWith(
         fontSize: 20,
         fontWeight: FontWeight.w600,
       ),
@@ -1375,13 +1400,18 @@ class SleepCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: AppTextStyle.ARIAL_White.copyWith(
+              fontSize: 14,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             duration,
-            style: const TextStyle(color: Color(0xff9AA4B2), fontSize: 12),
+            style: AppTextStyle.ARIAL_White.copyWith(
+              fontSize: 12,
+              color: const Color(0xff9AA4B2),
+            ),
           ),
         ],
       ),

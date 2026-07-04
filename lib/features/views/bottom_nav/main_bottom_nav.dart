@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:outdoor_therapy/features/views/browse/browse_screen.dart';
-import 'package:outdoor_therapy/features/views/download/download_page.dart';
+import 'package:outdoor_therapy/features/views/download/download_screen.dart';
 import 'package:outdoor_therapy/features/views/favorite/favorite_screen.dart';
 import 'package:outdoor_therapy/features/views/menu/menu_screen.dart';
 import 'package:outdoor_therapy/core/widget/custom_play_card.dart';
@@ -216,7 +216,7 @@ class _GlassNavBar extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
         child: Container(
           height: 68,
           decoration: BoxDecoration(

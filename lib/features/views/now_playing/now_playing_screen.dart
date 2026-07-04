@@ -15,7 +15,7 @@ import '../../../model/favorite_response_model.dart';
 import 'player_controller.dart';
 import '../../../model/category_model.dart';
 import '../menu/controller/menu_screen_controller.dart';
-import '../download/download_controller.dart';
+import '../download/download_screen_controller.dart';
 import '../favorite/favorite_screen_controller.dart';
 
 class NowPlayingScreen extends StatefulWidget {
@@ -648,9 +648,9 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xff020617),
+      backgroundColor: AppColors.backGroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xff020617),
+        backgroundColor: AppColors.backGroundColor,
         elevation: 0,
         centerTitle: true,
         title: const Text('Now Playing',
@@ -688,187 +688,185 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
               child: Text('No track selected', style: TextStyle(color: Colors.white)));
         }
 
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 40),
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 40),
 
-                Hero(
-                  tag: 'track-image-${track.id}',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: CachedNetworkImage(
-                      imageUrl: track.coverImageUrl ?? '',
-                      width: double.infinity,
-                      height: 300,
-                      fit: BoxFit.fill,
-                      placeholder: (_, __) => Container(color: Colors.white10),
-                      errorWidget: (_, __, ___) => Container(
-                        color: Colors.white10,
-                        child: const Icon(Icons.music_note, color: Colors.white54, size: 50),
-                      ),
+              Hero(
+                tag: 'track-image-${track.id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: CachedNetworkImage(
+                    imageUrl: track.coverImageUrl ?? '',
+                    width: double.infinity,
+                    height: 300,
+                    fit: BoxFit.fill,
+                    placeholder: (_, __) => Container(color: Colors.white10),
+                    errorWidget: (_, __, ___) => Container(
+                      color: Colors.white10,
+                      child: const Icon(Icons.music_note, color: Colors.white54, size: 50),
                     ),
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(track.title ?? 'Unknown Track',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 6),
+                        Text(track.categoryName ?? '',
+                            style: const TextStyle(color: Color(0xff94A3B8), fontSize: 14)),
+                      ],
+                    ),
+                  ),
+
+                  // Favorite Button - Instant UI change using FavoriteScreenController
+                  Obx(() => IconButton(
+                    icon: Icon(
+                      isFavorite.value ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite.value ? const Color(0xFF7B61FF) : AppColors.lightGreyColor,
+                    ),
+                    onPressed: _toggleFavorite,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  )),
+
+                  _buildDownloadButton(track.id ?? '', track),
+                ],
+              ),
+
+              const SizedBox(height: 80),
+
+              // ✅ FIXED SLIDER with proper drag handling
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 4,
+                  activeTrackColor: const Color(0xff6366F1),
+                  inactiveTrackColor: const Color(0xff1E293B),
+                  thumbColor: Colors.white,
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                ),
+                child: Obx(() {
+                  // ✅ Get max value as double
+                  final maxValue = currentDuration.inSeconds.toDouble();
+                  // ✅ Clamp the slider value to max
+                  final displayValue = _sliderValue.value.clamp(0.0, maxValue);
+                  final currentPosition = Duration(seconds: displayValue.toInt());
+
+                  return Column(
+                    children: [
+                      Slider(
+                        value: displayValue,
+                        max: maxValue > 0 ? maxValue : 100.0, // ✅ Ensure double
+                        onChanged: (double value) {
+                          // ✅ User is dragging - update slider UI smoothly
+                          _isDragging.value = true;
+                          _sliderValue.value = value;
+                        },
+                        onChangeStart: (double value) {
+                          // User started dragging
+                          _isDragging.value = true;
+                        },
+                        onChangeEnd: (double value) {
+                          // ✅ User stopped dragging - seek to the final position
+                          _isDragging.value = false;
+                          final seekPosition = Duration(seconds: value.toInt());
+                          _playerController.seek(seekPosition);
+                          _lastPositionUpdate = seekPosition;
+                        },
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(track.title ?? 'Unknown Track',
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 6),
-                          Text(track.categoryName ?? '',
-                              style: const TextStyle(color: Color(0xff94A3B8), fontSize: 14)),
+                          Text(
+                            // ✅ Show the slider position while dragging, otherwise show actual position
+                            _isDragging.value
+                                ? _formatDuration(currentPosition)
+                                : _formatDuration(_playerController.position.value),
+                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                          Text(
+                            _formatDuration(currentDuration),
+                            style: const TextStyle(color: Color(0xff94A3B8), fontSize: 12),
+                          ),
                         ],
                       ),
-                    ),
+                    ],
+                  );
+                }),
+              ),
 
-                    // Favorite Button - Instant UI change using FavoriteScreenController
-                    Obx(() => IconButton(
-                      icon: Icon(
-                        isFavorite.value ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite.value ? const Color(0xFF7B61FF) : AppColors.lightGreyColor,
-                      ),
-                      onPressed: _toggleFavorite,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    )),
+              const SizedBox(height: 40),
 
-                    _buildDownloadButton(track.id ?? '', track),
-                  ],
-                ),
-
-                const SizedBox(height: 80),
-
-                // ✅ FIXED SLIDER with proper drag handling
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 4,
-                    activeTrackColor: const Color(0xff6366F1),
-                    inactiveTrackColor: const Color(0xff1E293B),
-                    thumbColor: Colors.white,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: Icon(_getPlaybackIcon(),
+                        color: _playerController.playbackMode.value == PlaybackMode.continuous
+                            ? AppColors.lightGreyColor
+                            : const Color(0xff6366F1),
+                        size: 26),
+                    onPressed: _playerController.cyclePlaybackMode,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
-                  child: Obx(() {
-                    // ✅ Get max value as double
-                    final maxValue = currentDuration.inSeconds.toDouble();
-                    // ✅ Clamp the slider value to max
-                    final displayValue = _sliderValue.value.clamp(0.0, maxValue);
-                    final currentPosition = Duration(seconds: displayValue.toInt());
-
-                    return Column(
-                      children: [
-                        Slider(
-                          value: displayValue,
-                          max: maxValue > 0 ? maxValue : 100.0, // ✅ Ensure double
-                          onChanged: (double value) {
-                            // ✅ User is dragging - update slider UI smoothly
-                            _isDragging.value = true;
-                            _sliderValue.value = value;
-                          },
-                          onChangeStart: (double value) {
-                            // User started dragging
-                            _isDragging.value = true;
-                          },
-                          onChangeEnd: (double value) {
-                            // ✅ User stopped dragging - seek to the final position
-                            _isDragging.value = false;
-                            final seekPosition = Duration(seconds: value.toInt());
-                            _playerController.seek(seekPosition);
-                            _lastPositionUpdate = seekPosition;
-                          },
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              // ✅ Show the slider position while dragging, otherwise show actual position
-                              _isDragging.value
-                                  ? _formatDuration(currentPosition)
-                                  : _formatDuration(_playerController.position.value),
-                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                            ),
-                            Text(
-                              _formatDuration(currentDuration),
-                              style: const TextStyle(color: Color(0xff94A3B8), fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-
-                const SizedBox(height: 40),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      icon: Icon(_getPlaybackIcon(),
-                          color: _playerController.playbackMode.value == PlaybackMode.continuous
-                              ? AppColors.lightGreyColor
-                              : const Color(0xff6366F1),
-                          size: 26),
-                      onPressed: _playerController.cyclePlaybackMode,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 32),
-                      onPressed: _playerController.playPrevious,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    ),
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                      child: _playerController.isLoading.value
-                          ? const Padding(
-                          padding: EdgeInsets.all(20),
-                          child: CircularProgressIndicator(color: Colors.black, strokeWidth: 3))
-                          : IconButton(
-                        icon: Icon(
-                          _playerController.isPlaying.value
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          color: Colors.black,
-                          size: 34,
-                        ),
-                        onPressed: _playerController.togglePlayPause,
-                        padding: EdgeInsets.zero,
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 32),
+                    onPressed: _playerController.playPrevious,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  ),
+                  Container(
+                    width: 70,
+                    height: 70,
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: _playerController.isLoading.value
+                        ? const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 3))
+                        : IconButton(
+                      icon: Icon(
+                        _playerController.isPlaying.value
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: Colors.black,
+                        size: 34,
                       ),
+                      onPressed: _playerController.togglePlayPause,
+                      padding: EdgeInsets.zero,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 32),
-                      onPressed: _playerController.playNext,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    ),
-                    Obx(() => IconButton(
-                      icon: Icon(Icons.timer_outlined,
-                          color: _menuController.sleepTimer.value != 'Off'
-                              ? const Color(0xff6366F1)
-                              : AppColors.lightGreyColor,
-                          size: 26),
-                      onPressed: _showSleepTimerSheet,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    )),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 32),
+                    onPressed: _playerController.playNext,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  ),
+                  Obx(() => IconButton(
+                    icon: Icon(Icons.timer_outlined,
+                        color: _menuController.sleepTimer.value != 'Off'
+                            ? const Color(0xff6366F1)
+                            : AppColors.lightGreyColor,
+                        size: 26),
+                    onPressed: _showSleepTimerSheet,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  )),
+                ],
+              ),
 
-                const Spacer(),
-                const SizedBox(height: 24),
-              ],
-            ),
+              const Spacer(),
+              const SizedBox(height: 24),
+            ],
           ),
         );
       }),
