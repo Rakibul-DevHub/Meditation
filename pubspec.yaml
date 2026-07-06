@@ -52,7 +52,6 @@ dependencies:
   audio_service: ^0.18.18
   just_audio_background: ^0.0.1-beta.17
   firebase_messaging: ^16.4.1
-#  flutter_local_notifications: ^17.0.0
   flutter_local_notifications: ^22.0.1
 
 
