@@ -49,6 +49,70 @@
 
 
 
+//todo:: update and working down one
+
+
+
+
+
+//plugins {
+//    id("com.android.application")
+//    id("com.google.gms.google-services")
+//    id("kotlin-android")
+//    id("dev.flutter.flutter-gradle-plugin")
+//}
+//
+//android {
+//    namespace = "com.example.outdoor_therapy"
+//    compileSdk = flutter.compileSdkVersion
+//    ndkVersion = flutter.ndkVersion
+//
+//    compileOptions {
+//        sourceCompatibility = JavaVersion.VERSION_17
+//        targetCompatibility = JavaVersion.VERSION_17
+//        // ✅ This is the key flag that enables desugaring
+//        isCoreLibraryDesugaringEnabled = true
+//    }
+//
+//    kotlinOptions {
+//        jvmTarget = JavaVersion.VERSION_17.toString()
+//    }
+//
+//    defaultConfig {
+//        applicationId = "com.example.outdoor_therapy"
+//        minSdk = 24  // You can keep this or even lower it back to 21
+//        targetSdk = 34
+//        versionCode = flutter.versionCode
+//        versionName = flutter.versionName
+//    }
+//
+//    buildTypes {
+//        release {
+//            signingConfig = signingConfigs.getByName("debug")
+//        }
+//    }
+//}
+//
+//flutter {
+//    source = "../.."
+//}
+//
+//// ✅ This is the required dependency that provides the desugaring library
+//dependencies {
+//    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+//}
+
+
+
+
+
+
+
+
+
+
+
+/// todo;; updating to working withlatest verson
 
 
 
@@ -69,8 +133,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // ✅ This is the key flag that enables desugaring
-        isCoreLibraryDesugaringEnabled = true
+        isCoreLibraryDesugaringEnabled = true  // ✅ Required
     }
 
     kotlinOptions {
@@ -79,7 +142,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.outdoor_therapy"
-        minSdk = 24  // You can keep this or even lower it back to 21
+        minSdk = 24
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -96,7 +159,7 @@ flutter {
     source = "../.."
 }
 
-// ✅ This is the required dependency that provides the desugaring library
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    // ✅ Required for flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
