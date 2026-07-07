@@ -100,128 +100,126 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            /// Background Gradient
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xff030712),
-                    Color(0xff0A0C1A),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          /// Background Gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xff030712),
+                  Color(0xff0A0C1A),
+                ],
               ),
             ),
+          ),
 
-            /// PageView for Swipeable Content
-            PageView.builder(
-              controller: _pageController,
-              onPageChanged: (int page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
-              itemCount: _contents.length,
-              itemBuilder: (context, index) {
-                return OnboardingPage(content: _contents[index]);
-              },
-            ),
+          /// PageView for Swipeable Content
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (int page) {
+              setState(() {
+                _currentPage = page;
+              });
+            },
+            itemCount: _contents.length,
+            itemBuilder: (context, index) {
+              return OnboardingPage(content: _contents[index]);
+            },
+          ),
 
-            /// Pagination Dots
-            Positioned(
-              bottom: 100,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_contents.length, (index) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: _currentPage == index ? 32 : 8,
-                    height: 8,
-                    margin: EdgeInsets.only(right: index < _contents.length - 1 ? 8 : 0),
-                    decoration: BoxDecoration(
-                      gradient: _currentPage == index
-                          ? const LinearGradient(
-                        colors: [
-                          Color(0xff615fff),
-                          Color(0xff8B7FFF),
-                        ],
-                      )
-                          : null,
-                      color: _currentPage == index ? null : const Color(0xff2A2F3F),
-                      borderRadius: BorderRadius.circular(100),
-                      boxShadow: _currentPage == index
-                          ? [
-                        BoxShadow(
-                          color: const Color(0xff615fff).withOpacity(0.3),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                          : null,
-                    ),
-                  );
-                }),
-              ),
-            ),
-
-            /// Next Button / Get Started Button
-            Positioned(
-              bottom: 24,
-              left: 20,
-              right: 20,
-              child: Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xff615fff),
-                      Color(0xff7B77FF),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xff615fff).withOpacity(0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: _nextPage,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _currentPage == _contents.length - 1 ? "Get Started" : "Next",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                          color: Colors.white,
-                        ),
+          /// Pagination Dots
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(_contents.length, (index) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: _currentPage == index ? 32 : 8,
+                  height: 8,
+                  margin: EdgeInsets.only(right: index < _contents.length - 1 ? 8 : 0),
+                  decoration: BoxDecoration(
+                    gradient: _currentPage == index
+                        ? const LinearGradient(
+                      colors: [
+                        Color(0xff615fff),
+                        Color(0xff8B7FFF),
+                      ],
+                    )
+                        : null,
+                    color: _currentPage == index ? null : const Color(0xff2A2F3F),
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: _currentPage == index
+                        ? [
+                      BoxShadow(
+                        color: const Color(0xff615fff).withOpacity(0.3),
+                        blurRadius: 8,
+                        spreadRadius: 1,
                       ),
-                      const SizedBox(width: 8),
-                    ],
+                    ]
+                        : null,
                   ),
+                );
+              }),
+            ),
+          ),
+
+          /// Next Button / Get Started Button
+          Positioned(
+            bottom: 24,
+            left: 20,
+            right: 20,
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xff615fff),
+                    Color(0xff7B77FF),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xff615fff).withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: _nextPage,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _currentPage == _contents.length - 1 ? "Get Started" : "Next",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

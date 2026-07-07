@@ -514,7 +514,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       Get.snackbar('Download Complete', '${track.title} saved for offline listening.',
           backgroundColor: Colors.green,
           colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           duration: const Duration(seconds: 3));
 
     } on DioException catch (e) {

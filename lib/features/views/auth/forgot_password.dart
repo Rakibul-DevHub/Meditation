@@ -126,196 +126,194 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    height: 64,
-                    width: 64,
-                    decoration: BoxDecoration(
-                      color: const Color(0xff101828),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(50),
-                      child: SvgPicture.asset(
-                        'assets/images/logo.svg',
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.scaleDown,
-                        placeholderBuilder: (BuildContext context) => Container(
-                          padding: const EdgeInsets.all(16.0),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primaryColor,
-                              strokeWidth: 2,
-                            ),
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  height: 64,
+                  width: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xff101828),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child: SvgPicture.asset(
+                      'assets/images/logo.svg',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.scaleDown,
+                      placeholderBuilder: (BuildContext context) => Container(
+                        padding: const EdgeInsets.all(16.0),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primaryColor,
+                            strokeWidth: 2,
                           ),
                         ),
                       ),
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-                  /// Title
-                  const Text(
-                    "Forgot Password?",
-                    style: TextStyle(
-                      fontSize: 24,
-                      color: Color(0xfff9fafb),
-                      fontWeight: FontWeight.bold,
-                    ),
+                /// Title
+                const Text(
+                  "Forgot Password?",
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: Color(0xfff9fafb),
+                    fontWeight: FontWeight.bold,
                   ),
+                ),
 
-                  const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-                  /// Description
-                  const Text(
-                    "Don't worry! Enter your email address and we'll send you a code to reset your password.",
-                    textAlign: TextAlign.center,
+                /// Description
+                const Text(
+                  "Don't worry! Enter your email address and we'll send you a code to reset your password.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xff9AA4B2),
+                    height: 1.5,
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                /// Email Label
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Email Address",
                     style: TextStyle(
+                      color: Color(0xfffafafa),
                       fontSize: 14,
-                      color: Color(0xff9AA4B2),
-                      height: 1.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 32),
+                const SizedBox(height: 8),
 
-                  /// Email Label
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Email Address",
-                      style: TextStyle(
-                        color: Color(0xfffafafa),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                /// Email Input Field with Validation
+                TextFormField(
+                  controller: _emailController,
+                  style: const TextStyle(color: Color(0xfff9fafb)),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!GetUtils.isEmail(value)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    hintText: "your@email.com",
+                    hintStyle: const TextStyle(color: Color(0xff6a7282)),
+                    prefixIcon: const Icon(Icons.email_outlined, color: Color(0xff6a7282)),
+                    filled: true,
+                    fillColor: const Color(0xff101828),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xff364153)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xff364153)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 1),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    errorStyle: const TextStyle(color: Colors.redAccent),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                /// Send Verification Code Button with Loading State
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
+                      elevation: 0,
                     ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  /// Email Input Field with Validation
-                  TextFormField(
-                    controller: _emailController,
-                    style: const TextStyle(color: Color(0xfff9fafb)),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!GetUtils.isEmail(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
+                    onPressed: (){
+                      Get.to(()=>VerifyCodeScreen());
                     },
-                    decoration: InputDecoration(
-                      hintText: "your@email.com",
-                      hintStyle: const TextStyle(color: Color(0xff6a7282)),
-                      prefixIcon: const Icon(Icons.email_outlined, color: Color(0xff6a7282)),
-                      filled: true,
-                      fillColor: const Color(0xff101828),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xff364153)),
+                    child: _isLoading
+                        ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xff364153)),
+                    )
+                        : const Text(
+                      "Send Verification Code",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red, width: 1),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red, width: 2),
-                      ),
-                      errorStyle: const TextStyle(color: Colors.redAccent),
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                  /// Send Verification Code Button with Loading State
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
+                /// Login Link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Remember your password? ",
+                      style: TextStyle(
+                        color: Color(0xff6a7282),
+                        fontSize: 14,
                       ),
-                      onPressed: (){
-                        Get.to(()=>VerifyCodeScreen());
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Get.back();
                       },
-                      child: _isLoading
-                          ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                          : const Text(
-                        "Send Verification Code",
+                      child: const Text(
+                        "Login",
                         style: TextStyle(
-                          fontSize: 16,
+                          color: Color(0xffffffff),
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
                         ),
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  /// Login Link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Remember your password? ",
-                        style: TextStyle(
-                          color: Color(0xff6a7282),
-                          fontSize: 14,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Get.back();
-                        },
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(
-                            color: Color(0xffffffff),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

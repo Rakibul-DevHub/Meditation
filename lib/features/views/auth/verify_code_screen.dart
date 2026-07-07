@@ -40,157 +40,155 @@ class VerifyCodeScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                /// Logo Icon
-                Container(
-                  height: 64,
-                  width: 64,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff101828),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: SvgPicture.asset(
-                      'assets/images/logo.svg',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.scaleDown,
-                    ),
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              /// Logo Icon
+              Container(
+                height: 64,
+                width: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xff101828),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(50),
+                  child: SvgPicture.asset(
+                    'assets/images/logo.svg',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.scaleDown,
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-                /// Title
-                const Text(
-                  "Verify Code",
-                  style: TextStyle(
-                    fontSize: 24,
-                    color: Color(0xfff9fafb),
-                    fontWeight: FontWeight.bold,
+              /// Title
+              const Text(
+                "Verify Code",
+                style: TextStyle(
+                  fontSize: 24,
+                  color: Color(0xfff9fafb),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              /// Description
+              Obx(
+                    () => Text(
+                  controller.email.value.isNotEmpty
+                      ? "Enter the 6-digit verification code sent to ${controller.email.value} to continue."
+                      : "Enter the 6-digit verification code sent to your email to continue.",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xff9AA4B2),
+                    height: 1.5,
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 12),
+              const SizedBox(height: 40),
 
-                /// Description
-                Obx(
-                      () => Text(
-                    controller.email.value.isNotEmpty
-                        ? "Enter the 6-digit verification code sent to ${controller.email.value} to continue."
-                        : "Enter the 6-digit verification code sent to your email to continue.",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xff9AA4B2),
-                      height: 1.5,
-                    ),
-                  ),
-                ),
+              /// OTP Input Fields
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(6, (index) {
+                  return _buildOtpField(controller, index);
+                }),
+              ),
 
-                const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
-                /// OTP Input Fields
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List.generate(6, (index) {
-                    return _buildOtpField(controller, index);
-                  }),
-                ),
-
-                const SizedBox(height: 32),
-
-                /// Verify Button
-                Obx(
-                      () => SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
+              /// Verify Button
+              Obx(
+                    () => SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      onPressed: controller.isLoading.value ? null : () => controller.verifyCode(),
-                      child: controller.isLoading.value
-                          ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                          : const Text(
-                        "Verify Code",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      elevation: 0,
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                /// Resend Section
-                Column(
-                  children: [
-                    const Text(
-                      "Didn't receive the code?",
+                    onPressed: controller.isLoading.value ? null : () => controller.verifyCode(),
+                    child: controller.isLoading.value
+                        ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                        : const Text(
+                      "Verify Code",
                       style: TextStyle(
-                        color: Color(0xff6a7282),
-                        fontSize: 14,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Obx(
-                          () => !controller.canResend.value
-                          ? Text(
-                        "Resend code in ${controller.secondsRemaining.value} seconds",
-                        style: const TextStyle(
-                          color: Color(0xff9AA4B2),
-                          fontSize: 13,
-                        ),
-                      )
-                          : GestureDetector(
-                        onTap: () => controller.resendCode(),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xff101828),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xff364153)),
-                          ),
-                          child: const Text(
-                            "Resend Code",
-                            style: TextStyle(
-                              color: Color(0xffffffff),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+              ),
 
-                const SizedBox(height: 20),
-              ],
-            ),
+              const SizedBox(height: 24),
+
+              /// Resend Section
+              Column(
+                children: [
+                  const Text(
+                    "Didn't receive the code?",
+                    style: TextStyle(
+                      color: Color(0xff6a7282),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Obx(
+                        () => !controller.canResend.value
+                        ? Text(
+                      "Resend code in ${controller.secondsRemaining.value} seconds",
+                      style: const TextStyle(
+                        color: Color(0xff9AA4B2),
+                        fontSize: 13,
+                      ),
+                    )
+                        : GestureDetector(
+                      onTap: () => controller.resendCode(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xff101828),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xff364153)),
+                        ),
+                        child: const Text(
+                          "Resend Code",
+                          style: TextStyle(
+                            color: Color(0xffffffff),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+            ],
           ),
         ),
       ),

@@ -1018,7 +1018,7 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
         '${track.title} saved for offline listening.',
         backgroundColor: Colors.green,
         colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
         duration: const Duration(seconds: 3),
       );
     } on DioException catch (e) {
@@ -1047,7 +1047,7 @@ class _SoundTrackCardState extends State<_SoundTrackCard> {
     _downloadService.addOrUpdateDownload(failed);
     Get.snackbar(
       'Download Failed',
-      'Could not save track. Tap to retry.',
+      'Could not save track. Download limit Full.',
       backgroundColor: Colors.red,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
